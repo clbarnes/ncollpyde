@@ -1,0 +1,42 @@
+language: python
+
+stages:
+  - test
+  - name: deploy
+    if: tag IS present
+env:
+  global:
+  - TRAVIS_RUST_VERSION=nightly-2019-07-01
+  - RUST_BACKTRACE=1
+  - PYPI_USERNAME=pattonw
+
+test_template: &test_template
+  stage: test
+  before_install:
+    source ./ci/travis/setup_rust.sh
+  install:
+    pip install -U maturin pytest
+  script:
+    ./ci/travis/test.sh
+
+deploy_template: &deploy_template
+  stage: deploy
+  before_install:
+    source ./ci/travis/setup_rust.sh
+  install:
+    pip install -U maturin
+  script:
+    ./ci/travis/deploy.sh
+
+jobs:
+  include:
+    - <<: *test_template
+      python: 3.6
+    - <<: *test_template
+      dist: xenial
+      python: 3.7
+    - <<: *deploy_template
+      python: 3.6
+    - <<: *deploy_template
+      dist: xenial
+      python: 3.7
