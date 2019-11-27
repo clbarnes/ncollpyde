@@ -1,3 +1,6 @@
+meshio
+trimesh[easy]
+maturin==0.7.7
 pip==19.3.1
 bumpversion==0.5.3
 wheel==0.33.6
@@ -7,5 +10,5 @@ tox==3.14.1
 coverage==4.5.4
 Sphinx==2.2.1
 twine==3.1.0
-pytest==5.3.0
+pytest==5.3.1
 pytest-runner==5.2

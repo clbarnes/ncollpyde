@@ -21,7 +21,9 @@ classifier = [
 ]
 
 [dependencies]
-pyo3 = { version = "0.7.0", features = ["extension-module"] }
+pyo3 = { version = "0.8.3", features = ["extension-module"] }
+ncollide3d = "0.21.0"
+nalgebra = "0.19"
 
 [lib]
 name = "ncollpyde"
