@@ -7,14 +7,9 @@ use ncollide3d::shape::TriMesh;
 
 #[pymodule]
 fn ncollpyde(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_class::<Volume>()?;
+    m.add_class::<TriMeshWrapper>()?;
 
     Ok(())
-}
-
-#[pyclass]
-struct Volume {
-    mesh: TriMesh<f32>,
 }
 
 fn vec_to_point<T: Scalar>(v: Vec<T>) -> Point3<T> {
@@ -36,8 +31,13 @@ fn mesh_contains_point<T: RealField>(mesh: &TriMesh<T>, point: &Point3<T>) -> bo
     }
 }
 
+#[pyclass]
+struct TriMeshWrapper {
+    mesh: TriMesh<f32>,
+}
+
 #[pymethods]
-impl Volume {
+impl TriMeshWrapper {
     #[new]
     fn __new__(obj: &PyRawObject, points: Vec<Vec<f32>>, indices: Vec<Vec<usize>>) -> PyResult<()> {
         let points2 = points.into_iter().map(vec_to_point).collect();
@@ -51,10 +51,12 @@ impl Volume {
         mesh_contains_point(&self.mesh, &vec_to_point(point))
     }
 
-    fn contains_many(&self, _py: Python, points: Vec<Vec<f32>>) -> Vec<bool> {
-        points
+    fn contains_many(&self, py: Python, points: Vec<Vec<f32>>) -> Vec<bool> {
+        py.allow_threads( || {
+            points
             .into_iter()
             .map(|v| mesh_contains_point(&self.mesh, &vec_to_point(v)))
             .collect()
+        })
     }
 }

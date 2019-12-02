@@ -4,6 +4,7 @@
 """Tests for `ncollpyde` package."""
 
 import pytest
+import numpy as np
 
 from ncollpyde import Volume
 
@@ -20,12 +21,12 @@ points_expected = [
 def test_single(mesh, point, expected):
     """Sample pytest test function with the pytest fixture as an argument."""
     vol = Volume(*mesh)
-    assert vol.contains(point) == expected
+    assert (point in vol) == expected
 
 
 def test_corner(mesh):
     vol = Volume(*mesh)
-    assert vol.contains(mesh[0][0])
+    assert mesh[0][0] in vol
 
 
 def test_many(mesh):
@@ -36,4 +37,4 @@ def test_many(mesh):
         expected.append(e)
 
     vol = Volume(*mesh)
-    assert vol.contains_many(points) == expected
+    assert np.array_equal(vol.contains(points), expected)
