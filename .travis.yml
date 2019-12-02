@@ -16,7 +16,7 @@ test_template: &test_template
   before_install:
     source ./ci/travis/setup_rust.sh
   install:
-    pip install -U maturin pytest
+    pip install -r requirements.txt
   script:
     ./ci/travis/test.sh
 
@@ -25,7 +25,7 @@ deploy_template: &deploy_template
   before_install:
     source ./ci/travis/setup_rust.sh
   install:
-    pip install -U maturin
+    pip install -r requirements.txt
   script:
     ./ci/travis/deploy.sh
 

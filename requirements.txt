@@ -1,6 +1,5 @@
 # runtime
 meshio
-trimesh[easy]
 
 # installation
 maturin==0.7.7
