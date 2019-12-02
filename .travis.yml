@@ -32,13 +32,9 @@ deploy_template: &deploy_template
 jobs:
   include:
     - <<: *test_template
-      python: 3.6
-    - <<: *test_template
       python: 3.7
     - <<: *test_template
       python: 3.8
-    - <<: *deploy_template
-      python: 3.6
     - <<: *deploy_template
       python: 3.7
     - <<: *deploy_template
