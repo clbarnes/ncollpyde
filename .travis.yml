@@ -7,7 +7,7 @@ stages:
     if: tag IS present
 env:
   global:
-  - TRAVIS_RUST_VERSION=nightly-2019-07-01
+  - TRAVIS_RUST_VERSION=nightly
   - RUST_BACKTRACE=1
   - PYPI_USERNAME=clbarnes
 
@@ -35,11 +35,11 @@ jobs:
       python: 3.6
     - <<: *test_template
       python: 3.7
-    - << *test_template
+    - <<: *test_template
       python: 3.8
     - <<: *deploy_template
       python: 3.6
     - <<: *deploy_template
-      python: 3.6
+      python: 3.7
     - <<: *deploy_template
       python: 3.8
