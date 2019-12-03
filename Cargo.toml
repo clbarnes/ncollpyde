@@ -1,7 +1,7 @@
 [package]
 authors = ["Chris L. Barnes <chrislloydbarnes@gmail.com>"]
 name = "ncollpyde"
-version = "version = "0.2.1""
+version = "0.2.1"
 description = "A python wrapper around a subset of the ncollide rust library"
 readme = "README.rst"
 edition = "2018"
