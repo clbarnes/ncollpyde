@@ -9,7 +9,7 @@ edition = "2018"
 # [package.metadata.maturin.scripts]
 
 [package.metadata.maturin]
-requires-dist = ["numpy"]
+requires-dist = ["numpy>=1.16.0"]
 requires-python = ">=3.7"
 classifier = [
     'Development Status :: 2 - Pre-Alpha',
