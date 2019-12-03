@@ -16,7 +16,7 @@ pytest-benchmark==3.2.2
 
 # develop
 pip==19.3.1
-bumpversion==0.5.3
+bump2version==0.5.11
 wheel==0.33.6
 watchdog==0.9.0
 flake8==3.7.9
