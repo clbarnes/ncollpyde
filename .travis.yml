@@ -1,5 +1,9 @@
 language: python
 dist: xenial
+addons:
+    apt:
+      packages:
+        - libspatialindex-dev
 
 stages:
   - test
@@ -13,10 +17,6 @@ env:
 
 test_template: &test_template
   stage: test
-  addons:
-    apt:
-      packages:
-        - libspatialindex-dev
   before_install:
     - source ./ci/travis/setup_rust.sh
   install:
