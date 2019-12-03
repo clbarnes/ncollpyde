@@ -3,7 +3,7 @@ maturin==0.7.7
 
 # run
 numpy
-trimesh[easy]==3.4.5
+trimesh==3.4.5
 
 # test
 meshio
