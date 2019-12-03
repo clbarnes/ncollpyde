@@ -14,18 +14,19 @@ env:
 test_template: &test_template
   stage: test
   before_install:
-    source ./ci/travis/setup_rust.sh
+    - sudo apt install libspatialindex-dev
+    - source ./ci/travis/setup_rust.sh
   install:
-    pip install -r requirements.txt
+    - pip install -r requirements.txt
   script:
     ./ci/travis/test.sh
 
 deploy_template: &deploy_template
   stage: deploy
   before_install:
-    source ./ci/travis/setup_rust.sh
+    - source ./ci/travis/setup_rust.sh
   install:
-    pip install -r requirements.txt
+    - pip install -r requirements.txt
   script:
     ./ci/travis/deploy.sh
 
