@@ -13,8 +13,11 @@ env:
 
 test_template: &test_template
   stage: test
+  addons:
+    apt:
+      packages:
+        - libspatialindex-dev
   before_install:
-    - sudo apt install libspatialindex-dev
     - source ./ci/travis/setup_rust.sh
   install:
     - pip install -r requirements.txt
