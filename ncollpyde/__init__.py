@@ -9,4 +9,4 @@ __version_info__ = tuple(int(n) for n in __version__.split("."))
 
 from .main import Volume
 
-__all__ = ['Volume']
+__all__ = ["Volume"]

@@ -1,8 +1,18 @@
-# runtime
-meshio
-
-# installation
+# build
 maturin==0.7.7
+
+# run
+numpy
+trimesh[easy]==3.4.5
+
+# test
+meshio
+pytest==5.3.1
+pytest-runner==5.2
+
+# bench
+pyoctree==0.2.10
+pytest-benchmark==3.2.2
 
 # develop
 pip==19.3.1
@@ -13,5 +23,3 @@ flake8==3.7.9
 tox==3.14.1
 coverage==4.5.4
 Sphinx==2.2.1
-pytest==5.3.1
-pytest-runner==5.2

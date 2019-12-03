@@ -1,9 +1,10 @@
-use pyo3::prelude::*;
 use nalgebra::geometry::Point3;
 use nalgebra::{Isometry3, RealField, Scalar};
 use ncollide3d::math::Vector;
 use ncollide3d::query::{Ray, RayCast};
 use ncollide3d::shape::TriMesh;
+use pyo3::prelude::*;
+use rayon::prelude::*;
 
 #[pymodule]
 fn ncollpyde(_py: Python, m: &PyModule) -> PyResult<()> {
@@ -52,11 +53,31 @@ impl TriMeshWrapper {
     }
 
     fn contains_many(&self, py: Python, points: Vec<Vec<f32>>) -> Vec<bool> {
-        py.allow_threads( || {
+        py.allow_threads(|| {
             points
-            .into_iter()
-            .map(|v| mesh_contains_point(&self.mesh, &vec_to_point(v)))
-            .collect()
+                .into_iter()
+                .map(|v| mesh_contains_point(&self.mesh, &vec_to_point(v)))
+                .collect()
+        })
+    }
+
+    fn contains_many_threaded(
+        &self,
+        py: Python,
+        points: Vec<Vec<f32>>,
+        threads: usize,
+    ) -> Vec<bool> {
+        py.allow_threads(|| {
+            let pool = rayon::ThreadPoolBuilder::new()
+                .num_threads(threads)
+                .build()
+                .unwrap();
+            pool.install(|| {
+                points
+                    .into_par_iter()
+                    .map(|v| mesh_contains_point(&self.mesh, &vec_to_point(v)))
+                    .collect()
+            })
         })
     }
 }
