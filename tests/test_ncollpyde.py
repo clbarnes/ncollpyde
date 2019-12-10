@@ -5,6 +5,7 @@
 
 import pytest
 import numpy as np
+from trimesh import Trimesh
 
 from ncollpyde import Volume
 
@@ -57,3 +58,33 @@ def test_can_repair_inversions(mesh):
     triangles = mesh.cells["triangle"]
     triangles = triangles[:, ::-1]
     Volume(mesh.points, triangles, True)
+
+
+def test_points(mesh):
+    points = mesh.points
+    vol = Volume(mesh.points, mesh.cells["triangle"])
+
+    actual = sorted(tuple(p) for p in vol.points)
+    expected = sorted(tuple(p) for p in points)
+    assert actual == expected
+
+
+def test_triangles(mesh):
+    points = mesh.points
+    triangles = mesh.cells["triangle"]
+    expected = Trimesh(points, triangles)
+
+    vol = Volume(mesh.points, triangles)
+    actual = Trimesh(vol.points, vol.faces)
+
+    assert expected.volume == actual.volume
+
+
+def test_extents(mesh):
+    points = mesh.points
+    vol = Volume(mesh.points, mesh.cells["triangle"])
+
+    expected = np.array([points.min(axis=0), points.max(axis=0)], np.float32)
+    actual = vol.extents
+
+    assert np.allclose(expected, actual)

@@ -2,7 +2,7 @@ use nalgebra::geometry::Point3;
 use nalgebra::{Isometry3, RealField, Scalar};
 use ncollide3d::math::Vector;
 use ncollide3d::query::{Ray, RayCast};
-use ncollide3d::shape::TriMesh;
+use ncollide3d::shape::{TriMesh, TriMeshFace};
 use pyo3::prelude::*;
 use rayon::prelude::*;
 
@@ -15,6 +15,14 @@ fn ncollpyde(_py: Python, m: &PyModule) -> PyResult<()> {
 
 fn vec_to_point<T: Scalar>(v: Vec<T>) -> Point3<T> {
     Point3::from_slice(&v[..3])
+}
+
+fn point_to_vec<T: Scalar>(p: &Point3<T>) -> Vec<T> {
+    p.iter().cloned().collect()
+}
+
+fn face_to_vec<T: RealField>(f: &TriMeshFace<T>) -> Vec<usize> {
+    f.indices.iter().cloned().collect()
 }
 
 fn mesh_contains_point<T: RealField>(mesh: &TriMesh<T>, point: &Point3<T>) -> bool {
@@ -79,5 +87,18 @@ impl TriMeshWrapper {
                     .collect()
             })
         })
+    }
+
+    fn points(&self, _py: Python) -> Vec<Vec<f32>> {
+        self.mesh.points().iter().map(point_to_vec).collect()
+    }
+
+    fn faces(&self, _py: Python) -> Vec<Vec<usize>> {
+        self.mesh.faces().iter().map(face_to_vec).collect()
+    }
+
+    fn aabb(&self, _py: Python) -> (Vec<f32>, Vec<f32>) {
+        let aabb = self.mesh.aabb();
+        (point_to_vec(aabb.mins()), point_to_vec(aabb.maxs()))
     }
 }

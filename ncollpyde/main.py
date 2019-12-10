@@ -115,3 +115,27 @@ class Volume:
             return cls(mesh.points, mesh.cells["triangle"], validate)
         except KeyError:
             raise ValueError("Must have triangle cells")
+
+    @property
+    def points(self):
+        """
+        Nx3 array of float32 describing vertices
+        """
+        return np.array(self._impl.points(), np.float32)
+
+    @property
+    def faces(self):
+        """
+        Mx3 array of uint64 describing indexes into points array making up triangles
+        """
+        return np.array(self._impl.faces(), np.uint64)
+
+    @property
+    def extents(self):
+        """
+        [
+            [xmin, ymin, zmin],
+            [xmax, ymax, zmax],
+        ]
+        """
+        return np.array(self._impl.aabb(), np.float32)
