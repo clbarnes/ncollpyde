@@ -18,14 +18,22 @@ from .ncollpyde import TriMeshWrapper
 logger = logging.getLogger(__name__)
 
 N_CPUS = cpu_count()
-DEFAULT_THREADS = None
+DEFAULT_THREADS = 0
 
 ArrayLike1D = Union[np.ndarray, Sequence[Number]]
 ArrayLike2D = Union[np.ndarray, Sequence[Sequence[Number]]]
 
 
 class Volume:
-    def __init__(self, vertices: ArrayLike2D, triangles: ArrayLike2D, validate=False):
+    threads = DEFAULT_THREADS
+
+    def __init__(
+        self,
+        vertices: ArrayLike2D,
+        triangles: ArrayLike2D,
+        validate=False,
+        threads=None,
+    ):
         """
         Create a volume described by a triangular mesh with N vertices and M triangles.
 
@@ -36,11 +44,15 @@ class Volume:
             If trimesh is installed, the mesh is checked for watertightness and correct
             winding, and repairs made if possible.
             Otherwise, only very basic checks are made.
+        :param validate: optional number or True, sets default threading for containment
+            checks with this instance. Can also be set on the class.
         """
         vertices = np.asarray(vertices, np.float32)
         triangles = np.asarray(triangles, np.uint64)
         if validate:
             vertices, triangles = self._validate(vertices, triangles)
+        if threads is not None:
+            self.threads = threads
         self._impl = TriMeshWrapper(vertices.tolist(), triangles.tolist())
 
     def _validate(self, vertices: np.ndarray, triangles: np.ndarray):
@@ -84,15 +96,17 @@ class Volume:
         return self._impl.contains(item.tolist())
 
     def contains(
-        self, coords: ArrayLike2D, threads: Optional[Union[int, bool]] = DEFAULT_THREADS
+        self, coords: ArrayLike2D, threads: Optional[Union[int, bool]] = None
     ) -> np.ndarray:
         """Check whether multiple points (as a Px3 array-like) are in the volume.
 
         :param coords:
         :param threads: None,
-            If ``threads`` is ``None``, the coordinates are tested in serial (but the
-            GIL is released).
+            If ``threads`` is ``None``, the instance's ``threads`` attribute (default 0)
+            is used.
             If ``threads`` is ``True``, ``threads`` is set to the number of CPUs.
+            If ``threads`` is 0, the query will be done in serial (but the GIL will be
+            released)
             If ``threads`` is something else (a number), the query will be parallelised
             over that number of threads.
         :return: np.ndarray of bools, whether each point is inside the volume
@@ -102,6 +116,9 @@ class Volume:
             raise ValueError("Coords is not a Nx3 array-like")
 
         if threads is None:
+            threads = self.threads
+
+        if not threads:
             out = self._impl.contains_many(coords.tolist())
         else:
             if threads is True:
@@ -110,9 +127,9 @@ class Volume:
         return np.array(out, dtype=bool)
 
     @classmethod
-    def from_meshio(cls, mesh, validate=False) -> Volume:
+    def from_meshio(cls, mesh, validate=False, threads=None) -> Volume:
         try:
-            return cls(mesh.points, mesh.cells["triangle"], validate)
+            return cls(mesh.points, mesh.cells["triangle"], validate, threads)
         except KeyError:
             raise ValueError("Must have triangle cells")
 

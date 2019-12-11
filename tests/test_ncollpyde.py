@@ -30,7 +30,7 @@ def test_corner(mesh):
     assert mesh.points[0] in vol
 
 
-@pytest.mark.parametrize("threads", [None, 2])
+@pytest.mark.parametrize("threads", [None, 0, 2])
 def test_many(mesh, threads):
     points = []
     expected = []
