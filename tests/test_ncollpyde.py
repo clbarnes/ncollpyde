@@ -93,3 +93,22 @@ def test_extents(mesh):
     actual = vol.extents
 
     assert np.allclose(expected, actual)
+
+
+def test_points_roundtrip(mesh):
+    points = mesh.points
+    vol = Volume(mesh.points, mesh.cells["triangle"])
+
+    expected = np.array(sorted(tuple(p) for p in points), dtype=np.float32)
+    actual = np.array(sorted(tuple(p) for p in vol.points), dtype=np.float32)
+
+    assert np.allclose(expected, actual)
+
+
+def test_extents_validity(mesh):
+    points = mesh.points
+    vol = Volume(mesh.points, mesh.cells["triangle"])
+
+    expected = np.array([points.min(axis=0), points.max(axis=0)], np.float32)
+    actual = vol.extents
+    assert np.allclose(expected, actual)
