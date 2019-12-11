@@ -62,14 +62,15 @@ class Volume:
                 logger.info("Mesh not valid, attempting to fix")
                 tm.fill_holes()
                 tm.fix_normals()
-                if tm.is_volume:
-                    return tm.vertices, tm.faces
-                else:
+                if not tm.is_volume:
                     raise ValueError(
                         "Mesh is not a volume "
                         "(e.g. not watertight, incorrect winding) "
                         "and could not be fixed"
                     )
+
+            return tm.vertices, tm.faces
+
         else:
             warnings.warn("trimesh not installed; full validation not possible")
 

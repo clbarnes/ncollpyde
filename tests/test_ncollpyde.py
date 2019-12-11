@@ -42,6 +42,11 @@ def test_many(mesh, threads):
     assert np.array_equal(vol.contains(points, threads=threads), expected)
 
 
+def test_no_validation(mesh):
+    triangles = mesh.cells["triangle"]
+    Volume(mesh.points, triangles, True)
+
+
 def test_can_repair_hole(mesh):
     triangles = mesh.cells["triangle"]
     triangles = triangles[:-1]
