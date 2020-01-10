@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """Tests for `ncollpyde` package."""
+from itertools import product
 
 import pytest
 import numpy as np
@@ -112,3 +113,43 @@ def test_extents_validity(mesh):
     expected = np.array([points.min(axis=0), points.max(axis=0)], np.float32)
     actual = vol.extents
     assert np.allclose(expected, actual)
+
+
+class ParamatrizationBuilder:
+    def __init__(self, *names):
+        self.param_names = names
+        self.params = []
+        self.test_names = []
+
+    def add(self, test_name, *params):
+        if len(params) != len(self.param_names):
+            raise ValueError(f"Wrong number of params given (got {len(params)}, expected {len(self.param_names)})")
+        self.params.append(params)
+        self.test_names.append(test_name)
+
+    def as_dict(self):
+        return {"argnames": self.param_names, "argvalues": self.params, "ids": self.test_names}
+
+
+params = ParamatrizationBuilder("coords", "is_internal")
+middle = [0.5, 0.5, 0.5]
+params.add("middle", middle, True)
+for idx, corner in enumerate(product([0, 1], repeat=3)):
+    params.add(f"corner-{idx}", corner, True)
+
+for dim in range(3):
+    this = middle.copy()
+    this[dim] = 0
+    params.add(f"face-low-dim{dim}", this.copy(), True)
+    this[dim] = 1
+    params.add(f"face-high-dim{dim}", this.copy(), True)
+
+    this[dim] = -0.5
+    params.add(f"external-low-dim{dim}", this.copy(), False)
+    this[dim] = 1.5
+    params.add(f"external-high-dim{dim}", this.copy(), False)
+
+
+@pytest.mark.parametrize(**params.as_dict())
+def test_cube(simple_volume, coords, is_internal):
+    assert (coords in simple_volume) == is_internal

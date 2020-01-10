@@ -1,7 +1,7 @@
 use nalgebra::geometry::Point3;
 use nalgebra::{Isometry3, RealField, Scalar};
 use ncollide3d::math::Vector;
-use ncollide3d::query::{Ray, RayCast};
+use ncollide3d::query::{Ray, RayCast, PointQuery};
 use ncollide3d::shape::{TriMesh, TriMeshFace};
 use pyo3::prelude::*;
 use rayon::prelude::*;
@@ -30,8 +30,15 @@ fn mesh_contains_point<T: RealField>(mesh: &TriMesh<T>, point: &Point3<T>) -> bo
         return false;
     }
 
+    let identity = Isometry3::identity();
+
+    // check whether point is on boundary
+    if mesh.contains_point(&identity, point) {
+        return true;
+    }
+
     match mesh.toi_and_normal_with_ray(
-        &Isometry3::identity(),
+        &identity,
         &Ray::new(*point, Vector::new(T::one(), T::zero(), T::zero())),
         false, // unused
     ) {
