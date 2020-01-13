@@ -98,11 +98,11 @@ install: clean ## install the package to the active Python's site-packages
 install-dev: clean
 	pip install -r requirements_dev.txt && pip install -e .
 
-patch: test-all docs
+patch: docs
 	bumpversion patch
 
-minor: test-all docs
+minor: docs
 	bumpversion minor
 
-major: test-all docs
+major: docs
 	bumpversion major
