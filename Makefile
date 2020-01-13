@@ -33,7 +33,7 @@ help:
 clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
 
 clean-build: ## remove build artifacts
-	rm -fr target/
+	rm -fr target
 	rm -fr build/
 	rm -fr dist/
 	rm -fr .eggs/
@@ -70,6 +70,19 @@ coverage: ## check code coverage quickly with the default Python
 	coverage report -m
 	coverage html
 	$(BROWSER) htmlcov/index.html
+
+docs: ## generate Sphinx HTML documentation, including API docs
+	rm -f docs/ncollpyde.rst
+	rm -f docs/modules.rst
+	sphinx-apidoc -o docs/ ncollpyde
+	$(MAKE) -C docs clean
+	$(MAKE) -C docs html
+
+view-docs:
+	$(BROWSER) docs/_build/html/index.html
+
+servedocs: docs ## compile the docs watching for changes
+	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .
 
 release: dist ## package and upload a release
 	twine upload dist/*
