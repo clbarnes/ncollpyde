@@ -1,7 +1,7 @@
 use nalgebra::geometry::Point3;
 use nalgebra::{Isometry3, RealField, Scalar};
 use ncollide3d::math::Vector;
-use ncollide3d::query::{Ray, RayCast, PointQuery};
+use ncollide3d::query::{PointQuery, Ray, RayCast};
 use ncollide3d::shape::{TriMesh, TriMeshFace};
 use pyo3::prelude::*;
 use rayon::prelude::*;
