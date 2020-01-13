@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import warnings
 from numbers import Number
-from typing import Union, Sequence, Optional
+from typing import Union, Sequence, Optional, TYPE_CHECKING
 from multiprocessing import cpu_count
 
 import numpy as np
@@ -14,6 +14,10 @@ except ImportError:
     trimesh = None
 
 from .ncollpyde import TriMeshWrapper
+
+if TYPE_CHECKING:
+    import meshio
+
 
 logger = logging.getLogger(__name__)
 
@@ -128,28 +132,37 @@ class Volume:
         return np.array(out, dtype=bool)
 
     @classmethod
-    def from_meshio(cls, mesh, validate=False, threads=None) -> Volume:
+    def from_meshio(cls, mesh: "meshio.Mesh", validate=False, threads=None) -> Volume:
+        """
+        Convenience function for instantiating a Volume from a meshio Mesh.
+
+        :param mesh: meshio Mesh whose only cells are triangles.
+        :param validate: as passed to __init__, defaults to False
+        :param threads: as passed to __init__, defaults to None
+        :raises ValueError: if Mesh does not have triangle cells
+        :return: Volume instance
+        """
         try:
             return cls(mesh.points, mesh.cells["triangle"], validate, threads)
         except KeyError:
             raise ValueError("Must have triangle cells")
 
     @property
-    def points(self):
+    def points(self) -> np.array:
         """
         Nx3 array of float32 describing vertices
         """
         return np.array(self._impl.points(), np.float32)
 
     @property
-    def faces(self):
+    def faces(self) -> np.array:
         """
         Mx3 array of uint64 describing indexes into points array making up triangles
         """
         return np.array(self._impl.faces(), np.uint64)
 
     @property
-    def extents(self):
+    def extents(self) -> np.array:
         """
         [
             [xmin, ymin, zmin],
