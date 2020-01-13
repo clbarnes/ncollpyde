@@ -13,3 +13,7 @@ repos:
     - id: check-yaml
     - id: check-added-large-files
     - id: flake8
+-   repo: https://github.com/doublify/pre-commit-rust
+    rev: master
+    hooks:
+    -   id: fmt
