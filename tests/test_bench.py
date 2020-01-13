@@ -1,11 +1,6 @@
 import numpy as np
 import trimesh
 
-try:
-    from pyoctree import pyoctree
-except ImportError:
-    pass
-
 import meshio
 import pytest
 

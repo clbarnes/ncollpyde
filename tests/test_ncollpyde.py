@@ -124,7 +124,8 @@ class ParamatrizationBuilder:
     def add(self, test_name, *params):
         if len(params) != len(self.param_names):
             raise ValueError(
-                f"Wrong number of params given (got {len(params)}, expected {len(self.param_names)})"
+                f"Wrong number of params given"
+                "(got {len(params)}, expected {len(self.param_names)})"
             )
         self.params.append(params)
         self.test_names.append(test_name)
