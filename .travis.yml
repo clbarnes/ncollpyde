@@ -11,7 +11,7 @@ stages:
     if: tag IS present
 env:
   global:
-  - TRAVIS_RUST_VERSION=nightly
+  - TRAVIS_RUST_VERSION=nightly-2019-11-25
   - RUST_BACKTRACE=1
   - PYPI_USERNAME=clbarnes
 
