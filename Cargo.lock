@@ -307,7 +307,7 @@ dependencies = [
 
 [[package]]
 name = "ncollpyde"
-version = "0.4.1"
+version = "0.5.0"
 dependencies = [
  "nalgebra",
  "ncollide3d",

@@ -160,3 +160,7 @@ for dim in range(3):
 @pytest.mark.parametrize(**params.as_dict())
 def test_cube(simple_volume, coords, is_internal):
     assert (coords in simple_volume) == is_internal
+
+
+def test_issue3(sez_right):
+    assert [28355.6, 51807.3, 47050] not in sez_right
