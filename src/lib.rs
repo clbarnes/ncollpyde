@@ -5,8 +5,8 @@ use ncollide3d::shape::{TriMesh, TriMeshFace};
 use pyo3::prelude::*;
 use rayon::prelude::*;
 
-type Precision = f32;
-const PRECISION: &'static str = "float32";
+type Precision = f64;
+const PRECISION: &'static str = "float64";
 
 const RAY_DIRECTION: [Precision; 3] = [
     3.1415926535897931,
