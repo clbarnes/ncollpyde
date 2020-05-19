@@ -6,9 +6,17 @@ use ncollide3d::shape::{TriMesh, TriMeshFace};
 use pyo3::prelude::*;
 use rayon::prelude::*;
 
+type Precision = f32;
+const PRECISION: &'static str = "float32";
+
 #[pymodule]
 fn ncollpyde(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<TriMeshWrapper>()?;
+
+    #[pyfn(m, "precision")]
+    fn precision_py(_py: Python) -> &'static str {
+        PRECISION
+    }
 
     Ok(())
 }
@@ -49,13 +57,13 @@ fn mesh_contains_point<T: RealField>(mesh: &TriMesh<T>, point: &Point3<T>) -> bo
 
 #[pyclass]
 struct TriMeshWrapper {
-    mesh: TriMesh<f32>,
+    mesh: TriMesh<Precision>,
 }
 
 #[pymethods]
 impl TriMeshWrapper {
     #[new]
-    fn __new__(obj: &PyRawObject, points: Vec<Vec<f32>>, indices: Vec<Vec<usize>>) -> PyResult<()> {
+    fn __new__(obj: &PyRawObject, points: Vec<Vec<Precision>>, indices: Vec<Vec<usize>>) -> PyResult<()> {
         let points2 = points.into_iter().map(vec_to_point).collect();
         let indices2 = indices.into_iter().map(vec_to_point).collect();
         Ok(obj.init(Self {
@@ -63,11 +71,11 @@ impl TriMeshWrapper {
         }))
     }
 
-    fn contains(&self, _py: Python, point: Vec<f32>) -> bool {
+    fn contains(&self, _py: Python, point: Vec<Precision>) -> bool {
         mesh_contains_point(&self.mesh, &vec_to_point(point))
     }
 
-    fn contains_many(&self, py: Python, points: Vec<Vec<f32>>) -> Vec<bool> {
+    fn contains_many(&self, py: Python, points: Vec<Vec<Precision>>) -> Vec<bool> {
         py.allow_threads(|| {
             points
                 .into_iter()
@@ -79,7 +87,7 @@ impl TriMeshWrapper {
     fn contains_many_threaded(
         &self,
         py: Python,
-        points: Vec<Vec<f32>>,
+        points: Vec<Vec<Precision>>,
         threads: usize,
     ) -> Vec<bool> {
         py.allow_threads(|| {
@@ -96,7 +104,7 @@ impl TriMeshWrapper {
         })
     }
 
-    fn points(&self, _py: Python) -> Vec<Vec<f32>> {
+    fn points(&self, _py: Python) -> Vec<Vec<Precision>> {
         self.mesh.points().iter().map(point_to_vec).collect()
     }
 
@@ -104,7 +112,7 @@ impl TriMeshWrapper {
         self.mesh.faces().iter().map(face_to_vec).collect()
     }
 
-    fn aabb(&self, _py: Python) -> (Vec<f32>, Vec<f32>) {
+    fn aabb(&self, _py: Python) -> (Vec<Precision>, Vec<Precision>) {
         let aabb = self.mesh.aabb();
         (point_to_vec(aabb.mins()), point_to_vec(aabb.maxs()))
     }

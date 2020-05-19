@@ -13,7 +13,7 @@ try:
 except ImportError:
     trimesh = None
 
-from .ncollpyde import TriMeshWrapper
+from .ncollpyde import TriMeshWrapper, precision
 
 if TYPE_CHECKING:
     import meshio
@@ -24,11 +24,14 @@ logger = logging.getLogger(__name__)
 N_CPUS = cpu_count()
 DEFAULT_THREADS = 0
 
+PRECISION = np.dtype(precision())
+
 ArrayLike1D = Union[np.ndarray, Sequence[Number]]
 ArrayLike2D = Union[np.ndarray, Sequence[Sequence[Number]]]
 
 
 class Volume:
+    dtype = PRECISION
     threads = DEFAULT_THREADS
 
     def __init__(
@@ -51,7 +54,7 @@ class Volume:
         :param validate: optional number or True, sets default threading for containment
             checks with this instance. Can also be set on the class.
         """
-        vertices = np.asarray(vertices, np.float32)
+        vertices = np.asarray(vertices, self.dtype)
         triangles = np.asarray(triangles, np.uint64)
         if validate:
             vertices, triangles = self._validate(vertices, triangles)
@@ -95,7 +98,7 @@ class Volume:
         :param item:
         :return:
         """
-        item = np.asarray(item, np.float32)
+        item = np.asarray(item, self.dtype)
         if item.shape != (3,):
             raise ValueError("Item is not a 3-length array-like")
         return self._impl.contains(item.tolist())
@@ -116,7 +119,7 @@ class Volume:
             over that number of threads.
         :return: np.ndarray of bools, whether each point is inside the volume
         """
-        coords = np.asarray(coords, np.float32)
+        coords = np.asarray(coords, self.dtype)
         if coords.shape[1:] != (3,):
             raise ValueError("Coords is not a Nx3 array-like")
 
@@ -152,7 +155,7 @@ class Volume:
         """
         Nx3 array of float32 describing vertices
         """
-        return np.array(self._impl.points(), np.float32)
+        return np.array(self._impl.points(), self.dtype)
 
     @property
     def faces(self) -> np.array:
@@ -169,4 +172,4 @@ class Volume:
             [xmax, ymax, zmax],
         ]
         """
-        return np.array(self._impl.aabb(), np.float32)
+        return np.array(self._impl.aabb(), self.dtype)
