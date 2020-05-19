@@ -36,4 +36,6 @@ def simple_volume(simple_mesh):
 
 @pytest.fixture
 def sez_right():
-    return Volume.from_meshio(meshio.read(str(mesh_dir / "SEZ_right.stl")), validate=True)
+    return Volume.from_meshio(
+        meshio.read(str(mesh_dir / "SEZ_right.stl")), validate=True
+    )
