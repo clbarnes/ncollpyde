@@ -24,7 +24,7 @@ classifier = [
 
 [dependencies]
 pyo3 = { version = "0.8.3", features = ["extension-module"] }
-ncollide3d = "0.21.0"
+ncollide3d = "0.23.0"
 nalgebra = "0.19"
 rayon = "1.2.1"
 

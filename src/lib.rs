@@ -1,7 +1,10 @@
-use nalgebra::geometry::Point3;
-use nalgebra::{Isometry3, RealField, Scalar};
+use std::fmt::Debug;
+
+use ncollide3d::math::{Vector, Point};
+use ncollide3d::nalgebra::Isometry3;
 use ncollide3d::query::{PointQuery, Ray, RayCast};
 use ncollide3d::shape::{TriMesh, TriMeshFace};
+use ncollide3d::bounding_volume::{HasBoundingVolume, BoundingSphere};
 use pyo3::prelude::*;
 use rayon::prelude::*;
 
@@ -26,19 +29,19 @@ fn ncollpyde(_py: Python, m: &PyModule) -> PyResult<()> {
     Ok(())
 }
 
-fn vec_to_point<T: Scalar>(v: Vec<T>) -> Point3<T> {
-    Point3::from_slice(&v[..3])
+fn vec_to_point<T: 'static + Debug + PartialEq + Copy>(v: Vec<T>) -> Point<T> {
+    Point::new(v[0], v[1], v[2])
 }
 
-fn point_to_vec<T: Scalar>(p: &Point3<T>) -> Vec<T> {
-    p.iter().cloned().collect()
+fn point_to_vec<T: 'static + Debug + PartialEq + Copy>(p: &Point<T>) -> Vec<T> {
+    vec![p.x, p.y, p.z]
 }
 
-fn face_to_vec<T: RealField>(f: &TriMeshFace<T>) -> Vec<usize> {
+fn face_to_vec(f: &TriMeshFace<Precision>) -> Vec<usize> {
     f.indices.iter().cloned().collect()
 }
 
-fn mesh_contains_point(mesh: &TriMesh<Precision>, point: &Point3<Precision>) -> bool {
+fn mesh_contains_point(mesh: &TriMesh<Precision>, point: &Point<Precision>, ray_direction: &Vector<Precision>) -> bool {
     if !mesh.aabb().contains_local_point(point) {
         return false;
     }
@@ -52,7 +55,8 @@ fn mesh_contains_point(mesh: &TriMesh<Precision>, point: &Point3<Precision>) -> 
 
     match mesh.toi_and_normal_with_ray(
         &identity,
-        &Ray::new(*point, RAY_DIRECTION.into()),
+        &Ray::new(*point, *ray_direction),
+        1.0,
         false, // unused
     ) {
         Some(intersection) => mesh.is_backface(intersection.feature),
@@ -63,6 +67,7 @@ fn mesh_contains_point(mesh: &TriMesh<Precision>, point: &Point3<Precision>) -> 
 #[pyclass]
 struct TriMeshWrapper {
     mesh: TriMesh<Precision>,
+    ray_direction: Vector<Precision>,
 }
 
 #[pymethods]
@@ -71,20 +76,25 @@ impl TriMeshWrapper {
     fn __new__(obj: &PyRawObject, points: Vec<Vec<Precision>>, indices: Vec<Vec<usize>>) -> PyResult<()> {
         let points2 = points.into_iter().map(vec_to_point).collect();
         let indices2 = indices.into_iter().map(vec_to_point).collect();
-        Ok(obj.init(Self {
-            mesh: TriMesh::new(points2, indices2, None),
-        }))
+        let mesh = TriMesh::new(points2, indices2, None);
+
+        let bsphere: BoundingSphere<Precision> = mesh.bounding_volume(&Isometry3::identity());
+        let len = bsphere.radius() * 2.0;
+
+        let unscaled_dir: Vector<Precision> = RAY_DIRECTION.into();
+        let ray_direction = unscaled_dir.normalize() * len;
+        Ok(obj.init(Self { mesh, ray_direction }))
     }
 
     fn contains(&self, _py: Python, point: Vec<Precision>) -> bool {
-        mesh_contains_point(&self.mesh, &vec_to_point(point))
+        mesh_contains_point(&self.mesh, &vec_to_point(point), &self.ray_direction)
     }
 
     fn contains_many(&self, py: Python, points: Vec<Vec<Precision>>) -> Vec<bool> {
         py.allow_threads(|| {
             points
                 .into_iter()
-                .map(|v| mesh_contains_point(&self.mesh, &vec_to_point(v)))
+                .map(|v| mesh_contains_point(&self.mesh, &vec_to_point(v), &self.ray_direction))
                 .collect()
         })
     }
@@ -103,7 +113,7 @@ impl TriMeshWrapper {
             pool.install(|| {
                 points
                     .into_par_iter()
-                    .map(|v| mesh_contains_point(&self.mesh, &vec_to_point(v)))
+                    .map(|v| mesh_contains_point(&self.mesh, &vec_to_point(v), &self.ray_direction))
                     .collect()
             })
         })
