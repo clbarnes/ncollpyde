@@ -1,21 +1,17 @@
 use std::fmt::Debug;
 
-use ncollide3d::math::{Vector, Point};
+use ncollide3d::bounding_volume::{BoundingSphere, HasBoundingVolume};
+use ncollide3d::math::{Point, Vector};
 use ncollide3d::nalgebra::Isometry3;
 use ncollide3d::query::{PointQuery, Ray, RayCast};
 use ncollide3d::shape::{TriMesh, TriMeshFace};
-use ncollide3d::bounding_volume::{HasBoundingVolume, BoundingSphere};
 use pyo3::prelude::*;
 use rayon::prelude::*;
 
 type Precision = f64;
 const PRECISION: &'static str = "float64";
 
-const RAY_DIRECTION: [Precision; 3] = [
-    3.1415926535897931,
-    2.7182818284590451,
-    1.4142135623730951,
-];
+const RAY_DIRECTION: [Precision; 3] = [3.1415926535897931, 2.7182818284590451, 1.4142135623730951];
 
 #[pymodule]
 fn ncollpyde(_py: Python, m: &PyModule) -> PyResult<()> {
@@ -41,7 +37,11 @@ fn face_to_vec(f: &TriMeshFace<Precision>) -> Vec<usize> {
     f.indices.iter().cloned().collect()
 }
 
-fn mesh_contains_point(mesh: &TriMesh<Precision>, point: &Point<Precision>, ray_direction: &Vector<Precision>) -> bool {
+fn mesh_contains_point(
+    mesh: &TriMesh<Precision>,
+    point: &Point<Precision>,
+    ray_direction: &Vector<Precision>,
+) -> bool {
     if !mesh.aabb().contains_local_point(point) {
         return false;
     }
@@ -73,7 +73,11 @@ struct TriMeshWrapper {
 #[pymethods]
 impl TriMeshWrapper {
     #[new]
-    fn __new__(obj: &PyRawObject, points: Vec<Vec<Precision>>, indices: Vec<Vec<usize>>) -> PyResult<()> {
+    fn __new__(
+        obj: &PyRawObject,
+        points: Vec<Vec<Precision>>,
+        indices: Vec<Vec<usize>>,
+    ) -> PyResult<()> {
         let points2 = points.into_iter().map(vec_to_point).collect();
         let indices2 = indices.into_iter().map(vec_to_point).collect();
         let mesh = TriMesh::new(points2, indices2, None);
@@ -83,7 +87,10 @@ impl TriMeshWrapper {
 
         let unscaled_dir: Vector<Precision> = RAY_DIRECTION.into();
         let ray_direction = unscaled_dir.normalize() * len;
-        Ok(obj.init(Self { mesh, ray_direction }))
+        Ok(obj.init(Self {
+            mesh,
+            ray_direction,
+        }))
     }
 
     fn contains(&self, _py: Python, point: Vec<Precision>) -> bool {
