@@ -1,6 +1,5 @@
 use nalgebra::geometry::Point3;
 use nalgebra::{Isometry3, RealField, Scalar};
-use ncollide3d::math::Vector;
 use ncollide3d::query::{PointQuery, Ray, RayCast};
 use ncollide3d::shape::{TriMesh, TriMeshFace};
 use pyo3::prelude::*;
@@ -8,6 +7,12 @@ use rayon::prelude::*;
 
 type Precision = f32;
 const PRECISION: &'static str = "float32";
+
+const RAY_DIRECTION: [Precision; 3] = [
+    3.1415926535897931,
+    2.7182818284590451,
+    1.4142135623730951,
+];
 
 #[pymodule]
 fn ncollpyde(_py: Python, m: &PyModule) -> PyResult<()> {
@@ -33,7 +38,7 @@ fn face_to_vec<T: RealField>(f: &TriMeshFace<T>) -> Vec<usize> {
     f.indices.iter().cloned().collect()
 }
 
-fn mesh_contains_point<T: RealField>(mesh: &TriMesh<T>, point: &Point3<T>) -> bool {
+fn mesh_contains_point(mesh: &TriMesh<Precision>, point: &Point3<Precision>) -> bool {
     if !mesh.aabb().contains_local_point(point) {
         return false;
     }
@@ -47,7 +52,7 @@ fn mesh_contains_point<T: RealField>(mesh: &TriMesh<T>, point: &Point3<T>) -> bo
 
     match mesh.toi_and_normal_with_ray(
         &identity,
-        &Ray::new(*point, Vector::new(T::one(), T::zero(), T::zero())),
+        &Ray::new(*point, RAY_DIRECTION.into()),
         false, // unused
     ) {
         Some(intersection) => mesh.is_backface(intersection.feature),
