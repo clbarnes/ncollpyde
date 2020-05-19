@@ -65,3 +65,5 @@ Containment checks:
 
     # checks can be parallelised
     volume.contains(np.random.random((1000, 3)), threads=4)
+
+Note that benchmarks checking 1000 points against a simple mesh show very little speedup with parallelisation.
