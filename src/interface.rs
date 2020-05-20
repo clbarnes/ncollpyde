@@ -8,10 +8,7 @@ use pyo3::prelude::*;
 use rayon::prelude::*;
 use std::f64::consts::{PI, E, SQRT_2};
 
-use crate::utils::mesh_contains_point;
-
-pub(crate) type Precision = f64;
-const PRECISION: &str = "float64";
+use crate::utils::{mesh_contains_point, Precision, PRECISION};
 
 // pi, e, sqrt(2)
 const RAY_DIRECTION: [Precision; 3] = [
@@ -31,12 +28,14 @@ fn face_to_vec(f: &TriMeshFace<Precision>) -> Vec<usize> {
     f.indices.iter().cloned().collect()
 }
 
+#[cfg(not(test))]
 #[pyclass]
 pub struct TriMeshWrapper {
     mesh: TriMesh<Precision>,
     ray_direction: Vector<Precision>,
 }
 
+#[cfg(not(test))]
 #[pymethods]
 impl TriMeshWrapper {
     #[new]
@@ -103,6 +102,7 @@ impl TriMeshWrapper {
     }
 }
 
+#[cfg(not(test))]
 #[pymodule]
 pub fn ncollpyde(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<TriMeshWrapper>()?;

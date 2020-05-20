@@ -66,4 +66,11 @@ Containment checks:
     # checks can be parallelised
     volume.contains(np.random.random((1000, 3)), threads=4)
 
-Note that benchmarks checking 1000 points against a simple mesh show very little speedup with parallelisation.
+Known issues
+------------
+
+* Benchmarks suggest that multithreaded performance is about the same as serial
+* Very rare false positives for containment
+   * Due to a `bug in the underlying library <https://github.com/rustsim/ncollide/issues/335>`_
+   * Only happens when the point is outside the mesh and fires a ray which touches a single edge or vertex of the mesh.
+
