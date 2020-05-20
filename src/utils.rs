@@ -1,4 +1,4 @@
-use ncollide3d::math::{Point, Vector, Isometry};
+use ncollide3d::math::{Isometry, Point, Vector};
 use ncollide3d::nalgebra::RealField;
 use ncollide3d::query::{PointQuery, Ray, RayCast};
 use ncollide3d::shape::TriMesh;
@@ -29,7 +29,6 @@ pub fn mesh_contains_point<T: RealField>(
         None => false,
     }
 }
-
 
 // TODO: rust unit tests blocked on this issue https://github.com/PyO3/pyo3/issues/941
 //
