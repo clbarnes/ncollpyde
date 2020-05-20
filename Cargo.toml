@@ -23,10 +23,12 @@ classifier = [
 ]
 
 [dependencies]
-pyo3 = { version = "0.8.3", features = ["extension-module"] }
+pyo3 = { version = "0.10.1", features = ["extension-module"] }
 ncollide3d = "0.23.0"
-nalgebra = "0.19"
 rayon = "1.2.1"
+
+# [dev-dependencies]
+# stl_io = "0.4.2"
 
 [lib]
 name = "ncollpyde"

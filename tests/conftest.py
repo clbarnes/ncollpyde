@@ -21,12 +21,7 @@ def volume(mesh):
 
 @pytest.fixture
 def simple_mesh():
-    mesh = meshio.read(str(mesh_dir / "20mm_cube.stl"))
-    points = mesh.points
-    points -= points.min(axis=0)
-    points /= points.max(axis=0)
-    mesh.points = points
-    return mesh
+    return meshio.read(str(mesh_dir / "cube.stl"))
 
 
 @pytest.fixture
