@@ -6,14 +6,18 @@ use ncollide3d::nalgebra::Isometry3;
 use ncollide3d::shape::{TriMesh, TriMeshFace};
 use pyo3::prelude::*;
 use rayon::prelude::*;
+use std::f64::consts::{PI, E, SQRT_2};
 
 use crate::utils::mesh_contains_point;
 
 pub(crate) type Precision = f64;
-const PRECISION: &'static str = "float64";
+const PRECISION: &str = "float64";
 
 // pi, e, sqrt(2)
-const RAY_DIRECTION: [Precision; 3] = [3.1415926535897931, 2.7182818284590451, 1.4142135623730951];
+const RAY_DIRECTION: [Precision; 3] = [
+    PI as Precision, E as Precision, SQRT_2 as Precision,
+];
+// [3.1415926535897931, 2.7182818284590451, 1.4142135623730951];
 
 fn vec_to_point<T: 'static + Debug + PartialEq + Copy>(v: Vec<T>) -> Point<T> {
     Point::new(v[0], v[1], v[2])
@@ -36,10 +40,7 @@ pub struct TriMeshWrapper {
 #[pymethods]
 impl TriMeshWrapper {
     #[new]
-    pub fn __new__(
-        points: Vec<Vec<Precision>>,
-        indices: Vec<Vec<usize>>,
-    ) -> Self {
+    pub fn __new__(points: Vec<Vec<Precision>>, indices: Vec<Vec<usize>>) -> Self {
         let points2 = points.into_iter().map(vec_to_point).collect();
         let indices2 = indices.into_iter().map(vec_to_point).collect();
         let mesh = TriMesh::new(points2, indices2, None);
@@ -49,7 +50,10 @@ impl TriMeshWrapper {
 
         let unscaled_dir: Vector<Precision> = RAY_DIRECTION.into();
         let ray_direction = unscaled_dir.normalize() * len;
-        Self { mesh, ray_direction }
+        Self {
+            mesh,
+            ray_direction,
+        }
     }
 
     pub fn contains(&self, _py: Python, point: Vec<Precision>) -> bool {
