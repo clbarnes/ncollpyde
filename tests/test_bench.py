@@ -6,7 +6,6 @@ import pytest
 
 from ncollpyde import Volume
 
-DTYPE = np.dtype("float32")
 SAMPLES_PER_DIM = 10
 PADDING = 0.2
 THREADS = 3
@@ -171,19 +170,22 @@ def expected(trimesh_volume, sample_points):
     return trimesh_volume.contains(sample_points)
 
 
-@pytest.fixture
-def sample_points(mesh: meshio.Mesh):
-    mins = mesh.points.min(axis=0)
-    maxes = mesh.points.max(axis=0)
+def make_sample_points(
+    aabb: np.ndarray, padding=PADDING, samples_per_dim=SAMPLES_PER_DIM
+):
+    """[[minx, miny, minz], [max, maxy, maxz]]"""
+    mins, maxes = aabb
     ranges = maxes - mins
-
-    mins -= ranges * PADDING
-    maxes += ranges * PADDING
-
-    sample1d = np.linspace(mins, maxes, SAMPLES_PER_DIM, dtype=DTYPE, axis=1)
-
+    mins -= ranges * padding
+    maxes += ranges * padding
+    sample1d = np.linspace(mins, maxes, samples_per_dim, dtype=Volume.dtype, axis=1)
     grid = np.meshgrid(*sample1d)
     return np.array([arr.flatten() for arr in grid]).T
+
+
+@pytest.fixture
+def sample_points(mesh: meshio.Mesh):
+    return make_sample_points([mesh.points.min(axis=0), mesh.points.max(axis=0)])
 
 
 def check_internals_equal(expected, actual):
@@ -201,11 +203,21 @@ def test_ncollpyde(ncollpyde_volume: Volume, sample_points, expected, benchmark)
     check_internals_equal(expected, actual)
 
 
-def test_ncollpyde_threaded(
-    ncollpyde_volume: Volume, sample_points, expected, benchmark
-):
-    actual = benchmark(ncollpyde_volume.contains, sample_points, threads=THREADS)
-    check_internals_equal(expected, actual)
+# def test_ncollpyde_threaded(
+#     ncollpyde_volume: Volume, sample_points, expected, benchmark
+# ):
+#     actual = benchmark(ncollpyde_volume.contains, sample_points, threads=THREADS)
+#     check_internals_equal(expected, actual)
+
+
+# def test_ncollpyde_complex(sez_right: Volume, benchmark):
+#     sample_points = make_sample_points(sez_right.extents, 0.1, 100)
+#     benchmark(sez_right.contains, sample_points)
+
+
+# def test_ncollpyde_complex_threads(sez_right: Volume, benchmark):
+#     sample_points = make_sample_points(sez_right.extents, 0.1, 100)
+#     benchmark(sez_right.contains, sample_points, threads=THREADS)
 
 
 @pytest.mark.xfail(reason="Results do not match yet")
