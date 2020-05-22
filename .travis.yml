@@ -11,7 +11,7 @@ stages:
     if: tag IS present
 env:
   global:
-  - TRAVIS_RUST_VERSION=nightly-2019-11-25
+  - TRAVIS_RUST_VERSION=nightly-2020-05-01
   - RUST_BACKTRACE=1
   - PYPI_USERNAME=clbarnes
 
@@ -22,7 +22,8 @@ test_template: &test_template
   install:
     - pip install -r requirements.txt
   script:
-    ./ci/travis/test.sh
+    - pytest -v
+    - flake8 .
 
 deploy_template: &deploy_template
   stage: deploy
@@ -35,6 +36,13 @@ deploy_template: &deploy_template
 
 jobs:
   include:
+    - name: "rust tests"
+      stage: test
+      before_install: source ./ci/travis/setup_rust.sh
+      script:
+        - cargo test
+        - cargo fmt -- --check
+        - cargo clippy
     - <<: *test_template
       python: 3.7
     - <<: *test_template

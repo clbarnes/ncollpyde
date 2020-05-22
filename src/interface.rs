@@ -6,14 +6,12 @@ use ncollide3d::nalgebra::Isometry3;
 use ncollide3d::shape::{TriMesh, TriMeshFace};
 use pyo3::prelude::*;
 use rayon::prelude::*;
-use std::f64::consts::{PI, E, SQRT_2};
+use std::f64::consts::{E, PI, SQRT_2};
 
 use crate::utils::{mesh_contains_point, Precision, PRECISION};
 
 // pi, e, sqrt(2)
-const RAY_DIRECTION: [Precision; 3] = [
-    PI as Precision, E as Precision, SQRT_2 as Precision,
-];
+const RAY_DIRECTION: [Precision; 3] = [PI as Precision, E as Precision, SQRT_2 as Precision];
 // [3.1415926535897931, 2.7182818284590451, 1.4142135623730951];
 
 fn vec_to_point<T: 'static + Debug + PartialEq + Copy>(v: Vec<T>) -> Point<T> {
