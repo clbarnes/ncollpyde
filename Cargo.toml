@@ -29,7 +29,11 @@ rayon = "1.2.1"
 
 [dev-dependencies]
 stl_io = "0.4.2"
+cargo-release = "0.13.4"
 
 [lib]
 name = "ncollpyde"
 crate-type = ["cdylib"]
+
+[package.metadata.release]
+disable-publish = true

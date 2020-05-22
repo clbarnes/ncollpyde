@@ -1,10 +1,13 @@
 language: python
-dist: xenial
+os: linux
+dist: bionic
 addons:
-    apt:
-      packages:
-        - libspatialindex-dev
-cache: cargo
+  apt:
+    packages:
+      - libspatialindex-dev
+cache:
+  - cargo
+  - pip
 
 stages:
   - test
@@ -14,7 +17,6 @@ env:
   global:
   - TRAVIS_RUST_VERSION=nightly-2020-05-01
   - RUST_BACKTRACE=1
-  - PYPI_USERNAME=clbarnes
 
 test_template: &test_template
   stage: test
@@ -26,20 +28,11 @@ test_template: &test_template
   script:
     - pytest -v --benchmark-skip
     - flake8 .
-
-deploy_template: &deploy_template
-  stage: deploy
-  before_install:
-    - source ./ci/travis/setup_rust.sh
-  install:
-    - pip install -r requirements.txt
-    - maturin develop --release
-  script:
-    ./ci/travis/deploy.sh
+    - black --check .
 
 jobs:
   include:
-    - name: "rust tests"
+    - name: "Rust tests"
       stage: test
       before_install: source ./ci/travis/setup_rust.sh
       script:
@@ -50,7 +43,7 @@ jobs:
       python: 3.7
     - <<: *test_template
       python: 3.8
-    - <<: *deploy_template
-      python: 3.7
-    - <<: *deploy_template
-      python: 3.8
+    - stage: deploy
+      before_install: source ./ci/travis/setup_rust.sh
+      install: pip install $(grep '^maturin' requirements.txt)
+      script: maturin publish -u __token__ -p $PYPI_TOKEN -i python3.8 -i python3.7

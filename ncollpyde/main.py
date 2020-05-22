@@ -13,7 +13,7 @@ try:
 except ImportError:
     trimesh = None
 
-from .ncollpyde import TriMeshWrapper, precision
+from .ncollpyde import TriMeshWrapper, _precision, _version
 
 if TYPE_CHECKING:
     import meshio
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 N_CPUS = cpu_count()
 DEFAULT_THREADS = 0
 
-PRECISION = np.dtype(precision())
+PRECISION = np.dtype(_precision())
 
 ArrayLike1D = Union[np.ndarray, Sequence[Number]]
 ArrayLike2D = Union[np.ndarray, Sequence[Sequence[Number]]]
