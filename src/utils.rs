@@ -20,10 +20,8 @@ pub fn mesh_contains_point_ray<T: RealField>(
     );
 
     if let Some(intersection) = intersection_opt {
-        println!("norm dot: {:?}", intersection.normal.dot(ray_direction));
         mesh.is_backface(intersection.feature)
     } else {
-        println!("No intersection");
         false
     }
 }
