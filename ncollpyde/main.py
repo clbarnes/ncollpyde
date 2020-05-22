@@ -13,7 +13,7 @@ try:
 except ImportError:
     trimesh = None
 
-from .ncollpyde import TriMeshWrapper, _precision, _version
+from .ncollpyde import TriMeshWrapper, _precision
 
 if TYPE_CHECKING:
     import meshio

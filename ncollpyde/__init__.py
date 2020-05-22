@@ -5,7 +5,8 @@
 __author__ = """Chris L. Barnes"""
 __email__ = "chrislloydbarnes@gmail.com"
 
-from .main import Volume, _version
+from .ncollpyde import _version
+from .main import Volume
 
 __version__ = _version()
 __version_info__ = tuple(int(n) for n in __version__.split("."))
