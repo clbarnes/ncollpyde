@@ -4,6 +4,7 @@ addons:
     apt:
       packages:
         - libspatialindex-dev
+cache: cargo
 
 stages:
   - test
@@ -21,8 +22,9 @@ test_template: &test_template
     - source ./ci/travis/setup_rust.sh
   install:
     - pip install -r requirements.txt
+    - maturin develop --release
   script:
-    - pytest -v
+    - pytest -v --benchmark-skip
     - flake8 .
 
 deploy_template: &deploy_template
@@ -31,6 +33,7 @@ deploy_template: &deploy_template
     - source ./ci/travis/setup_rust.sh
   install:
     - pip install -r requirements.txt
+    - maturin develop --release
   script:
     ./ci/travis/deploy.sh
 
