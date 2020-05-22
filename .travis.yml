@@ -44,9 +44,15 @@ jobs:
     - <<: *test_template
       python: 3.8
     - stage: deploy
+      addons:
+        apt:
+          sources:
+            - deadsnakes
+          packages:
+            - python3.7
+            - python3.8
       before_install:
         - source ./ci/travis/setup_rust.sh
-        - pyenv activate 3.8 3.7
       install: pip install $(grep '^maturin' requirements.txt)
       script:
         - maturin publish -u __token__ -p $PYPI_TOKEN -i python3.8 -i python3.7
