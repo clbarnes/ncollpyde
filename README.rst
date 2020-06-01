@@ -4,17 +4,17 @@ ncollpyde
 
 
 .. image:: https://img.shields.io/pypi/pyversions/ncollpyde.svg
-        :target: https://pypi.python.org/pypi/ncollpyde
+    :target: https://pypi.python.org/pypi/ncollpyde
 
 .. image:: https://img.shields.io/pypi/v/ncollpyde.svg
-        :target: https://pypi.python.org/pypi/ncollpyde
+    :target: https://pypi.python.org/pypi/ncollpyde
 
-.. image:: https://img.shields.io/travis/clbarnes/ncollpyde.svg
-        :target: https://travis-ci.org/clbarnes/ncollpyde
+.. image:: https://github.com/clbarnes/ncollpyde/workflows/.github/workflows/ci.yml/badge.svg?branch=master
+    :target: https://github.com/clbarnes/ncollpyde/workflows/.github/workflows/ci.yml
 
 .. image:: https://readthedocs.org/projects/ncollpyde/badge/?version=latest
-        :target: https://ncollpyde.readthedocs.io/en/latest/?badge=latest
-        :alt: Documentation Status
+    :target: https://ncollpyde.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
 
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/ambv/black
