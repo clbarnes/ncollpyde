@@ -1,0 +1,97 @@
+on: [push, pull_request]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+
+  lint-rust:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          override: true
+          components: rustfmt, clippy
+      - run: cargo clippy
+      - run: cargo fmt -- --check
+
+  lint-python:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      - run: pip install $(grep -E '^(black|flake8)' requirements.txt)
+      - run: flake8 ncollpyde tests
+      - run: black ncollpyde tests --check
+
+  test-rust:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          override: true
+      - run: cargo test
+
+  test-python:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.7, 3.8]
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          override: true
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - run: |
+          sudo apt-get install libspatialindex-dev
+          pip install -U pip wheel
+          pip install -r requirements.txt
+        name: Install dependencies
+      - run: |
+          TGT_DIR="target/wheels/${{ matrix.python-version }}"
+          mkdir -p $TGT_DIR
+          maturin build --release --interpreter python --out $TGT_DIR
+          pip install $TGT_DIR/*.whl
+        name: Install package
+      - run: pytest --verbose
+
+  deploy:
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-18.04]
+    needs: [lint-rust, lint-python, test-rust, test-python]
+    runs-on: ${{ matrix.os }}
+    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          override: true
+      - run: pip install ^maturin requirements.txt
+      - run: maturin publish -u __token__ --interpreter
+        if: ${{ runner.os }} == 'Linux'
+        name: Deploy sdist
+      - run: maturin publish -u __token__ -i python3.7 -i python3.8
+        name: Deploy wheels
