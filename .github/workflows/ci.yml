@@ -76,6 +76,9 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           override: true
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
       - run: pip install $(grep ^maturin requirements.txt)
       - run: maturin publish -u __token__ --interpreter
         if: ${{ runner.os }} == 'Linux'
