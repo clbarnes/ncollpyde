@@ -2,9 +2,20 @@ use ncollide3d::math::{Isometry, Point, Vector};
 use ncollide3d::nalgebra::RealField;
 use ncollide3d::query::{PointQuery, Ray, RayCast};
 use ncollide3d::shape::TriMesh;
+use rand::Rng;
 
 pub type Precision = f64;
 pub const PRECISION: &str = "float64";
+
+pub fn random_dir<R: Rng>(rng: &mut R, length: Precision) -> Vector<Precision> {
+    let unscaled: Vector<Precision> = [
+        rng.gen::<Precision>() - 0.5,
+        rng.gen::<Precision>() - 0.5,
+        rng.gen::<Precision>() - 0.5,
+    ]
+    .into();
+    unscaled.normalize() * length
+}
 
 pub fn mesh_contains_point_ray<T: RealField>(
     mesh: &TriMesh<T>,
@@ -29,7 +40,7 @@ pub fn mesh_contains_point_ray<T: RealField>(
 pub fn mesh_contains_point<T: RealField>(
     mesh: &TriMesh<T>,
     point: &Point<T>,
-    ray_direction: &Vector<T>,
+    ray_directions: &[Vector<T>],
 ) -> bool {
     if !mesh.aabb().contains_local_point(point) {
         return false;
@@ -40,8 +51,13 @@ pub fn mesh_contains_point<T: RealField>(
         return true;
     }
 
-    // ? Repeat this with some more rays if true to account for edge touches
-    mesh_contains_point_ray(mesh, point, ray_direction)
+    if ray_directions.is_empty() {
+        false
+    } else {
+        ray_directions
+            .iter()
+            .all(|v| mesh_contains_point_ray(mesh, point, v))
+    }
 }
 
 #[cfg(test)]

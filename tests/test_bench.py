@@ -198,9 +198,12 @@ def test_trimesh(trimesh_volume: trimesh.Trimesh, sample_points, expected, bench
     check_internals_equal(expected, actual)
 
 
-def test_ncollpyde(ncollpyde_volume: Volume, sample_points, expected, benchmark):
+@pytest.mark.parametrize("n_rays", [0, 1, 2, 4, 8, 16])
+def test_ncollpyde(mesh, n_rays, sample_points, expected, benchmark):
+    ncollpyde_volume = Volume.from_meshio(mesh, n_rays=n_rays)
     actual = benchmark(ncollpyde_volume.contains, sample_points)
-    check_internals_equal(expected, actual)
+    if n_rays:
+        check_internals_equal(expected, actual)
 
 
 # def test_ncollpyde_threaded(

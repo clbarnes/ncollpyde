@@ -26,6 +26,8 @@ classifier = [
 pyo3 = { version = "0.10.1", features = ["extension-module"] }
 ncollide3d = "0.23.0"
 rayon = "1.2.1"
+rand = "0.7.3"
+rand_pcg = "0.2.1"
 
 [dev-dependencies]
 stl_io = "0.4.2"
@@ -37,3 +39,4 @@ crate-type = ["cdylib"]
 
 [package.metadata.release]
 disable-publish = true
+no-dev-version = true

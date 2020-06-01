@@ -5,6 +5,7 @@ import warnings
 from numbers import Number
 from typing import Union, Sequence, Optional, TYPE_CHECKING
 from multiprocessing import cpu_count
+import random
 
 import numpy as np
 
@@ -23,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 N_CPUS = cpu_count()
 DEFAULT_THREADS = 0
+DEFAULT_RAYS = 3
 
 PRECISION = np.dtype(_precision())
 
@@ -40,6 +42,8 @@ class Volume:
         triangles: ArrayLike2D,
         validate=False,
         threads=None,
+        n_rays=DEFAULT_RAYS,
+        ray_seed=None,
     ):
         """
         Create a volume described by a triangular mesh with N vertices and M triangles.
@@ -51,8 +55,18 @@ class Volume:
             If trimesh is installed, the mesh is checked for watertightness and correct
             winding, and repairs made if possible.
             Otherwise, only very basic checks are made.
-        :param validate: optional number or True, sets default threading for containment
+        :param threads: optional number or True, sets default threading for containment
             checks with this instance. Can also be set on the class.
+        :param n_rays: int (default 3), number of rays used to check containment.
+            The underlying library sometimes reports false positives:
+            casting multiple rays drastically reduces the chances of this.
+            As the bug only affects ray casts and only produces false positives,
+            unnecessary ray casts are short-circuited if:
+                - the point is not in the bounding box
+                - the point is on the hull
+                - one ray reports that the point is external.
+        :param ray_seed: int >=0, seed used for generating the rays.
+            If None, use a random seed.
         """
         vertices = np.asarray(vertices, self.dtype)
         triangles = np.asarray(triangles, np.uint64)
@@ -60,7 +74,12 @@ class Volume:
             vertices, triangles = self._validate(vertices, triangles)
         if threads is not None:
             self.threads = threads
-        self._impl = TriMeshWrapper(vertices.tolist(), triangles.tolist())
+        if ray_seed is None:
+            ray_seed = random.randrange(0, 2 ** 64)
+
+        self._impl = TriMeshWrapper(
+            vertices.tolist(), triangles.tolist(), int(n_rays), ray_seed
+        )
 
     def _validate(self, vertices: np.ndarray, triangles: np.ndarray):
         if trimesh:
@@ -135,37 +154,48 @@ class Volume:
         return np.array(out, dtype=bool)
 
     @classmethod
-    def from_meshio(cls, mesh: "meshio.Mesh", validate=False, threads=None) -> Volume:
+    def from_meshio(
+        cls,
+        mesh: "meshio.Mesh",
+        validate=False,
+        threads=None,
+        n_rays=DEFAULT_RAYS,
+        ray_seed=None,
+    ) -> Volume:
         """
         Convenience function for instantiating a Volume from a meshio Mesh.
 
         :param mesh: meshio Mesh whose only cells are triangles.
         :param validate: as passed to __init__, defaults to False
         :param threads: as passed to __init__, defaults to None
+        :param n_rays: as passed to __init__, defaults to 3
+        :param ray_seed: as passed to __init__, defaults to None (random)
         :raises ValueError: if Mesh does not have triangle cells
         :return: Volume instance
         """
         try:
-            return cls(mesh.points, mesh.cells["triangle"], validate, threads)
+            return cls(
+                mesh.points, mesh.cells["triangle"], validate, threads, n_rays, ray_seed
+            )
         except KeyError:
             raise ValueError("Must have triangle cells")
 
     @property
-    def points(self) -> np.array:
+    def points(self) -> np.ndarray:
         """
         Nx3 array of float32 describing vertices
         """
         return np.array(self._impl.points(), self.dtype)
 
     @property
-    def faces(self) -> np.array:
+    def faces(self) -> np.ndarray:
         """
         Mx3 array of uint64 describing indexes into points array making up triangles
         """
         return np.array(self._impl.faces(), np.uint64)
 
     @property
-    def extents(self) -> np.array:
+    def extents(self) -> np.ndarray:
         """
         [
             [xmin, ymin, zmin],
@@ -173,3 +203,13 @@ class Volume:
         ]
         """
         return np.array(self._impl.aabb(), self.dtype)
+
+    @property
+    def rays(self) -> np.ndarray:
+        """
+        Rays used to detect containment as an ndarray of shape (n_rays, 3).
+
+        These rays are in random directions (set with the ray seed on construction),
+        and are the length of the diameter of the volume's bounding sphere.
+        """
+        return np.array(self._impl.rays(), self.dtype)
