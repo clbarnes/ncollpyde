@@ -76,7 +76,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           override: true
-      - run: pip install ^maturin requirements.txt
+      - run: pip install $(grep ^maturin requirements.txt)
       - run: maturin publish -u __token__ --interpreter
         if: ${{ runner.os }} == 'Linux'
         name: Deploy sdist
