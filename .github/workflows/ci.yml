@@ -80,8 +80,8 @@ jobs:
         with:
           python-version: '3.x'
       - run: pip install $(grep ^maturin requirements.txt)
-      - run: maturin publish -u __token__ --interpreter
-        if: ${{ runner.os }} == 'Linux'
+      - if: startsWith(matrix.os,'ubuntu')
+        run: maturin publish -u __token__ -p ${{ secrets.MATURIN_PASSWORD }} --interpreter
         name: Deploy sdist
-      - run: maturin publish -u __token__ -i python3.7 -i python3.8
+      - run: maturin publish -u __token__ -p ${{ secrets.MATURIN_PASSWORD }} -i python3.7 -i python3.8 --no-sdist
         name: Deploy wheels
