@@ -59,11 +59,11 @@ jobs:
           pip install -U pip wheel Cython
           pip install $(grep -v -E '^(trimesh|#|\s*$)' requirements.txt)
         name: Install dependencies
-      - if: startsWith(matrix.os, 'ubuntu')
-        run: |
-          sudo apt-get install libspatialite-dev libgeos-dev
-          pip install $(grep -E ^trimesh requirements.txt)
-        name: Install trimesh (linux only)
+      # - if: startsWith(matrix.os, 'ubuntu')
+      #   run: |
+      #     sudo apt-get install libspatialite-dev libgeos-dev
+      #     pip install $(grep -E ^trimesh requirements.txt)
+      #   name: Install trimesh (linux only)
       - run: |
           TGT_DIR="target/wheels/${{ matrix.python-version }}"
           mkdir -p $TGT_DIR
