@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import warnings
 from numbers import Number
-from typing import Union, Sequence, Optional, TYPE_CHECKING
+from typing import Union, Sequence, Optional, TYPE_CHECKING, Tuple
 from multiprocessing import cpu_count
 import random
 
@@ -152,6 +152,49 @@ class Volume:
                 threads = N_CPUS
             out = self._impl.contains_many_threaded(coords.tolist(), threads)
         return np.array(out, dtype=bool)
+
+    def intersects(
+        self, src_points: ArrayLike2D, tgt_points: ArrayLike2D
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Get intersections between line segments and volume.
+
+        Line segments are defined by their start (source) and end (target) points.
+        Only the first intersection for a given line segment is reported.
+
+        The output arrays are:
+
+        * Which line segment the intersection refers to,
+          as an index into the argument arrays
+        * The point of intersection
+        * Whether the intersection is with the inside face of the mesh
+
+        N.B. the inside face check will report True
+        for cases where a line touches ("skims") an external edge.
+
+        :param src_points: Nx3 array-like
+        :param tgt_points: Nx3 array-like
+        :raises ValueError: Inputs have different shapes or are not Nx3
+        :return: tuple of
+          uint array of indices (N),
+          float array of locations (Nx3),
+          bool array of is_backface (N)
+        """
+        src = np.asarray(src_points, self.dtype)
+        tgt = np.asarray(tgt_points, self.dtype)
+
+        if src.shape != tgt.shape:
+            raise ValueError("Source and target points arrays must be the same shape")
+
+        if src.shape[1:] != (3,):
+            raise ValueError("Points must be Nx3 array-like")
+
+        idxs, points, bfs = self._impl.intersects(src.tolist(), tgt.tolist())
+
+        return (
+            np.array(idxs, np.uint64),
+            np.array(points, self.dtype),
+            np.array(bfs, bool),
+        )
 
     @classmethod
     def from_meshio(
