@@ -1,5 +1,4 @@
 import numpy as np
-import trimesh
 
 import meshio
 import pytest
@@ -193,7 +192,7 @@ def check_internals_equal(expected, actual):
     assert np.array_equal(expected, actual)
 
 
-def test_trimesh(trimesh_volume: trimesh.Trimesh, sample_points, expected, benchmark):
+def test_trimesh(trimesh_volume: "trimesh.Trimesh", sample_points, expected, benchmark):
     actual = benchmark(trimesh_volume.contains, sample_points)
     check_internals_equal(expected, actual)
 
