@@ -223,7 +223,12 @@ def test_ncollpyde(mesh, n_rays, sample_points, expected, benchmark):
 #     benchmark(sez_right.contains, sample_points, threads=THREADS)
 
 
-@pytest.mark.xfail(reason="Results do not match yet")
-def test_pyoctree(pyoctree_volume: PyOctreeWrapper, sample_points, expected, benchmark):
-    actual = benchmark(pyoctree_volume.contains, sample_points)
-    check_internals_equal(expected, actual)
+@pytest.mark.parametrize("safe", [True, False], ids=lambda x: ["FAST", "SAFE"][int(x)])
+def test_pyoctree(
+    pyoctree_volume: PyOctreeWrapper, safe, sample_points, expected, benchmark
+):
+    actual = benchmark(pyoctree_volume.contains, sample_points, safe)
+    if safe:
+        pytest.xfail("pyoctree results are not consistent unless in SAFE mode")
+    else:
+        check_internals_equal(expected, actual)
