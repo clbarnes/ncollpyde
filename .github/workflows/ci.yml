@@ -29,10 +29,7 @@ jobs:
       - run: black ncollpyde tests --check
 
   test-rust:
-    strategy:
-      matrix:
-        os: [ubuntu-18.04, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -44,9 +41,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-18.04, macos-latest, windows-latest]
         python-version: ['3.7', '3.8']
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -56,21 +52,17 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: |
-          pip install -U pip wheel Cython
-          pip install $(grep -v -E '^(trimesh|#|\s*$)' requirements.txt)
+          sudo apt-get install libspatialindex-dev
+          pip install -U pip wheel
+          pip install -r requirements.txt
         name: Install dependencies
-      # - if: startsWith(matrix.os, 'ubuntu')
-      #   run: |
-      #     sudo apt-get install libspatialite-dev libgeos-dev
-      #     pip install $(grep -E ^trimesh requirements.txt)
-      #   name: Install trimesh (linux only)
       - run: |
           TGT_DIR="target/wheels/${{ matrix.python-version }}"
           mkdir -p $TGT_DIR
-          maturin build --interpreter python --out $TGT_DIR
+          maturin build --release --interpreter python --out $TGT_DIR
           pip install $TGT_DIR/*.whl
         name: Install package
-      - run: pytest --verbose --benchmark-skip
+      - run: pytest --verbose
 
   deploy:
     strategy:
