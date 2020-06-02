@@ -115,7 +115,7 @@ def test_extents_validity(mesh):
     assert np.allclose(expected, actual)
 
 
-class ParamatrizationBuilder:
+class ParametrizationBuilder:
     def __init__(self, *names):
         self.param_names = names
         self.params = []
@@ -130,6 +130,10 @@ class ParamatrizationBuilder:
         self.params.append(params)
         self.test_names.append(test_name)
 
+    def add_many(self, *tuples):
+        for tup in tuples:
+            self.add(*tup)
+
     def as_dict(self):
         return {
             "argnames": self.param_names,
@@ -138,29 +142,49 @@ class ParamatrizationBuilder:
         }
 
 
-params = ParamatrizationBuilder("coords", "is_internal")
+cube_params = ParametrizationBuilder("coords", "is_internal")
 middle = [0.5, 0.5, 0.5]
-params.add("middle", middle, True)
+cube_params.add("middle", middle, True)
 for idx, corner in enumerate(product([0, 1], repeat=3)):
-    params.add(f"corner-{idx}", corner, True)
+    cube_params.add(f"corner-{idx}", corner, True)
 
 for dim in range(3):
     this = middle.copy()
     this[dim] = 0
-    params.add(f"face-low-dim{dim}", this.copy(), True)
+    cube_params.add(f"face-low-dim{dim}", this.copy(), True)
     this[dim] = 1
-    params.add(f"face-high-dim{dim}", this.copy(), True)
+    cube_params.add(f"face-high-dim{dim}", this.copy(), True)
 
     this[dim] = -0.5
-    params.add(f"external-low-dim{dim}", this.copy(), False)
+    cube_params.add(f"external-low-dim{dim}", this.copy(), False)
     this[dim] = 1.5
-    params.add(f"external-high-dim{dim}", this.copy(), False)
+    cube_params.add(f"external-high-dim{dim}", this.copy(), False)
 
 
-@pytest.mark.parametrize(**params.as_dict())
+@pytest.mark.parametrize(**cube_params.as_dict())
 def test_cube(simple_volume, coords, is_internal):
     assert (coords in simple_volume) == is_internal
 
 
-def test_issue3(sez_right):
-    assert [28355.6, 51807.3, 47050] not in sez_right
+intersects_params = ParametrizationBuilder("src", "tgt", "intersects", "is_bf")
+intersects_params.add_many(
+    ("face-oi", [-0.5, 0.5, 0.5], [0.5, 0.5, 0.5], True, False),
+    ("face-io", [0.5, 0.5, 0.5], [-0.5, 0.5, 0.5], True, True),
+    ("edge-oi", [-0.5, -0.5, 0.5], [0.5, 0.5, 0.5], True, False),
+    ("edge-io", [0.5, 0.5, 0.5], [-0.5, -0.5, 0.5], True, True),
+    ("corner-oi", [-0.5, -0.5, -0.5], [0.5, 0.5, 0.5], True, False),
+    ("corner-io", [0.5, 0.5, 0.5], [-0.5, -0.5, -0.5], True, True),
+    ("miss", [-1, -1, -1], [-1, -1, 0], False, None),
+    ("short", [-1, -1, -1], [-0.5, -0.5, -0.5], False, None),
+    ("double", [-0.5, 0.5, 0.5], [1.5, 1.5, 1.5], True, False),
+)
+
+
+@pytest.mark.parametrize(**intersects_params.as_dict())
+def test_intersections(simple_volume, src, tgt, intersects, is_bf):
+    idx, _, backface = simple_volume.intersections([src], [tgt])
+    assert intersects == (0 in idx)
+    if intersects:
+        assert is_bf == backface[0]
+    else:
+        assert is_bf is None

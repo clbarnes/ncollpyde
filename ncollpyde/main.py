@@ -153,7 +153,7 @@ class Volume:
             out = self._impl.contains_many_threaded(coords.tolist(), threads)
         return np.array(out, dtype=bool)
 
-    def intersects(
+    def intersections(
         self, src_points: ArrayLike2D, tgt_points: ArrayLike2D
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Get intersections between line segments and volume.
@@ -188,7 +188,7 @@ class Volume:
         if src.shape[1:] != (3,):
             raise ValueError("Points must be Nx3 array-like")
 
-        idxs, points, bfs = self._impl.intersects(src.tolist(), tgt.tolist())
+        idxs, points, bfs = self._impl.intersections(src.tolist(), tgt.tolist())
 
         return (
             np.array(idxs, np.uint64),
@@ -209,10 +209,10 @@ class Volume:
         Convenience function for instantiating a Volume from a meshio Mesh.
 
         :param mesh: meshio Mesh whose only cells are triangles.
-        :param validate: as passed to __init__, defaults to False
-        :param threads: as passed to __init__, defaults to None
-        :param n_rays: as passed to __init__, defaults to 3
-        :param ray_seed: as passed to __init__, defaults to None (random)
+        :param validate: as passed to ``__init__``, defaults to False
+        :param threads: as passed to ``__init__``, defaults to None
+        :param n_rays: as passed to ``__init__``, defaults to 3
+        :param ray_seed: as passed to ``__init__``, defaults to None (random)
         :raises ValueError: if Mesh does not have triangle cells
         :return: Volume instance
         """
@@ -226,7 +226,7 @@ class Volume:
     @property
     def points(self) -> np.ndarray:
         """
-        Nx3 array of float32 describing vertices
+        Nx3 array of float describing vertices
         """
         return np.array(self._impl.points(), self.dtype)
 
@@ -239,11 +239,10 @@ class Volume:
 
     @property
     def extents(self) -> np.ndarray:
-        """
-        [
-            [xmin, ymin, zmin],
-            [xmax, ymax, zmax],
-        ]
+        """Axis-aligned bounding box of the volume.
+
+        :return: 2x3 numpy array of floats,
+          where the first row is mins and the second row is maxes.
         """
         return np.array(self._impl.aabb(), self.dtype)
 
