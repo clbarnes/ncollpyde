@@ -61,7 +61,7 @@ jobs:
         name: Install dependencies
       - if: startsWith(matrix.os, 'ubuntu')
         run: |
-          sudo apt-get install libspatialite-dev
+          sudo apt-get install libspatialite-dev libgeos-dev
           pip install $(grep -E ^trimesh requirements.txt)
         name: Install trimesh (linux only)
       - run: |
