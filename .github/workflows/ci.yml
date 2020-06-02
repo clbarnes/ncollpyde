@@ -56,7 +56,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: |
-          pip install -U pip wheel
+          pip install -U pip wheel Cython
           pip install $(grep -v -E '^(trimesh|#|\s*$)' requirements.txt)
         name: Install dependencies
       - if: startsWith(matrix.os, 'ubuntu')
