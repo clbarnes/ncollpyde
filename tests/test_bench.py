@@ -229,6 +229,6 @@ def test_pyoctree(
 ):
     actual = benchmark(pyoctree_volume.contains, sample_points, safe)
     if safe:
-        pytest.xfail("pyoctree results are not consistent unless in SAFE mode")
-    else:
         check_internals_equal(expected, actual)
+    else:
+        pytest.xfail("pyoctree results are not consistent unless in SAFE mode")
