@@ -10,7 +10,7 @@ use rand::SeedableRng;
 use rand_pcg::Pcg64Mcg;
 use rayon::prelude::*;
 
-use crate::utils::{mesh_contains_point, random_dir, Precision, PRECISION};
+use crate::utils::{mesh_contains_point, points_cross_mesh, random_dir, Precision, PRECISION};
 
 fn vec_to_point<T: 'static + Debug + PartialEq + Copy>(v: Vec<T>) -> Point<T> {
     Point::new(v[0], v[1], v[2])
@@ -119,6 +119,33 @@ impl TriMeshWrapper {
     pub fn aabb(&self, _py: Python) -> (Vec<Precision>, Vec<Precision>) {
         let aabb = self.mesh.aabb();
         (point_to_vec(aabb.mins()), point_to_vec(aabb.maxs()))
+    }
+
+    pub fn intersections(
+        &self,
+        _py: Python,
+        src_points: Vec<Vec<Precision>>,
+        tgt_points: Vec<Vec<Precision>>,
+    ) -> (Vec<usize>, Vec<Vec<Precision>>, Vec<bool>) {
+        let mut idxs = Vec::default();
+        let mut intersections = Vec::default();
+        let mut is_backface = Vec::default();
+
+        for (idx, point, is_bf) in src_points
+            .into_iter()
+            .zip(tgt_points.into_iter())
+            .enumerate()
+            .filter_map(|(i, (src, tgt))| {
+                points_cross_mesh(&self.mesh, &vec_to_point(src), &vec_to_point(tgt))
+                    .map(|o| (i, o.0, o.1))
+            })
+        {
+            idxs.push(idx);
+            intersections.push(point_to_vec(&point));
+            is_backface.push(is_bf);
+        }
+
+        (idxs, intersections, is_backface)
     }
 }
 

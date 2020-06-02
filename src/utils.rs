@@ -60,6 +60,21 @@ pub fn mesh_contains_point<T: RealField>(
     }
 }
 
+pub fn points_cross_mesh<T: RealField>(
+    mesh: &TriMesh<T>,
+    src_point: &Point<T>,
+    tgt_point: &Point<T>,
+) -> Option<(Point<T>, bool)> {
+    let ray = Ray::new(*src_point, tgt_point - src_point);
+    mesh.toi_and_normal_with_ray(
+        &Isometry::identity(),
+        &ray,
+        T::one(),
+        false, // unused
+    )
+    .map(|i| (ray.point_at(i.toi), mesh.is_backface(i.feature)))
+}
+
 #[cfg(test)]
 mod tests {
     use ncollide3d::nalgebra::Point3;
@@ -68,6 +83,8 @@ mod tests {
     use stl_io::read_stl;
 
     use super::*;
+
+    const EPSILON: Precision = 0.001;
 
     fn read_mesh(name: &'static str) -> TriMesh<Precision> {
         let mut stl_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -195,5 +212,38 @@ mod tests {
     fn outside_touch_face() {
         assert_ray([-0.5, 0.0, 0.0], [1.0, 0.0, 0.0], false);
         assert_ray([-0.5, 0.0, 0.0], [2.0, 0.0, 0.0], false);
+    }
+
+    fn get_cross(src: [Precision; 3], tgt: [Precision; 3]) -> Option<([Precision; 3], bool)> {
+        let mesh = cube();
+        points_cross_mesh(&mesh, &Point::new(src[0], src[1], src[2]), &Point::new(tgt[0], tgt[1], tgt[2])).map(|(p, bf)| ([p.x, p.y, p.z], bf))
+    }
+
+    fn assert_array_eq(test: &[Precision; 3], refer: &[Precision; 3]) {
+        if !test.iter().zip(refer.iter()).all(|(a, b)| (a - b).abs() < EPSILON) {
+            panic!(
+                "Test failure: arrays unequal.\n\ttest {:?}\n\tref  {:?}\n",
+                test, refer
+            )
+        }
+    }
+
+    #[test]
+    fn cross_oi() {
+        let (loc, is_bf) = get_cross([-0.5, 0.5, 0.5], [0.5, 0.5, 0.5]).expect("Fail: no collision");
+        assert!(!is_bf);
+        assert_array_eq(&loc, &[0.0, 0.5, 0.5]);
+    }
+
+    #[test]
+    fn cross_io() {
+        let (loc, is_bf) = get_cross([0.5, 0.5, 0.5], [-0.5, 0.5, 0.5]).expect("Fail: no collision");
+        assert!(is_bf);
+        assert_array_eq(&loc, &[0.0, 0.5, 0.5]);
+    }
+
+    #[test]
+    fn nocross() {
+        assert!(get_cross([1.5, 1.5, 1.5], [2.0, 2.0, 2.0]).is_none());
     }
 }
