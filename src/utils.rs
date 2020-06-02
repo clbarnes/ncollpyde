@@ -216,11 +216,20 @@ mod tests {
 
     fn get_cross(src: [Precision; 3], tgt: [Precision; 3]) -> Option<([Precision; 3], bool)> {
         let mesh = cube();
-        points_cross_mesh(&mesh, &Point::new(src[0], src[1], src[2]), &Point::new(tgt[0], tgt[1], tgt[2])).map(|(p, bf)| ([p.x, p.y, p.z], bf))
+        points_cross_mesh(
+            &mesh,
+            &Point::new(src[0], src[1], src[2]),
+            &Point::new(tgt[0], tgt[1], tgt[2]),
+        )
+        .map(|(p, bf)| ([p.x, p.y, p.z], bf))
     }
 
     fn assert_array_eq(test: &[Precision; 3], refer: &[Precision; 3]) {
-        if !test.iter().zip(refer.iter()).all(|(a, b)| (a - b).abs() < EPSILON) {
+        if !test
+            .iter()
+            .zip(refer.iter())
+            .all(|(a, b)| (a - b).abs() < EPSILON)
+        {
             panic!(
                 "Test failure: arrays unequal.\n\ttest {:?}\n\tref  {:?}\n",
                 test, refer
@@ -230,14 +239,16 @@ mod tests {
 
     #[test]
     fn cross_oi() {
-        let (loc, is_bf) = get_cross([-0.5, 0.5, 0.5], [0.5, 0.5, 0.5]).expect("Fail: no collision");
+        let (loc, is_bf) =
+            get_cross([-0.5, 0.5, 0.5], [0.5, 0.5, 0.5]).expect("Fail: no collision");
         assert!(!is_bf);
         assert_array_eq(&loc, &[0.0, 0.5, 0.5]);
     }
 
     #[test]
     fn cross_io() {
-        let (loc, is_bf) = get_cross([0.5, 0.5, 0.5], [-0.5, 0.5, 0.5]).expect("Fail: no collision");
+        let (loc, is_bf) =
+            get_cross([0.5, 0.5, 0.5], [-0.5, 0.5, 0.5]).expect("Fail: no collision");
         assert!(is_bf);
         assert_array_eq(&loc, &[0.0, 0.5, 0.5]);
     }
