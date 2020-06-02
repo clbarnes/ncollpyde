@@ -60,7 +60,9 @@ jobs:
           pip install $(grep -v -E '^(trimesh|#|\s*$)' requirements.txt)
         name: Install dependencies
       - if: startsWith(matrix.os, 'ubuntu')
-        run: pip install $(grep -E ^trimesh requirements.txt)
+        run: |
+          sudo apt-get install libspatialite-dev
+          pip install $(grep -E ^trimesh requirements.txt)
         name: Install trimesh (linux only)
       - run: |
           TGT_DIR="target/wheels/${{ matrix.python-version }}"
