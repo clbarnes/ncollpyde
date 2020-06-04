@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 import warnings
 from numbers import Number
@@ -204,7 +202,7 @@ class Volume:
         threads=None,
         n_rays=DEFAULT_RAYS,
         ray_seed=None,
-    ) -> Volume:
+    ) -> "Volume":
         """
         Convenience function for instantiating a Volume from a meshio Mesh.
 
