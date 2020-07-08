@@ -81,7 +81,7 @@ class Volume:
 
     def _validate(self, vertices: np.ndarray, triangles: np.ndarray):
         if trimesh:
-            tm = trimesh.Trimesh(vertices, triangles)
+            tm = trimesh.Trimesh(vertices, triangles, validate=True)
             if not tm.is_volume:
                 logger.info("Mesh not valid, attempting to fix")
                 tm.fill_holes()
