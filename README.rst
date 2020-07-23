@@ -27,10 +27,19 @@ A python wrapper around a subset of the ncollide rust library
 * Free software: MIT License
 * Documentation: https://ncollpyde.readthedocs.io.
 
+Install
+-------
+
+``pip install ncollpyde``
+
+Pre-built wheels are available for Linux, MacOS, and Windows.
+If you have a stable rust compiler, you should also be able to install from source.
+
 Features
 --------
 
 * Checking whether points are inside a volume defined by a triangular mesh
+* Checking the intersection of line segments with the mesh
 
 Usage
 -----
@@ -73,4 +82,3 @@ Known issues
 * Very rare false positives for containment
    * Due to a `bug in the underlying library <https://github.com/rustsim/ncollide/issues/335>`_
    * Only happens when the point is outside the mesh and fires a ray which touches a single edge or vertex of the mesh.
-
