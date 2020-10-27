@@ -3,14 +3,12 @@ ncollpyde
 =========
 
 
-.. image:: https://img.shields.io/pypi/pyversions/ncollpyde.svg
-    :target: https://pypi.python.org/pypi/ncollpyde
-
 .. image:: https://img.shields.io/pypi/v/ncollpyde.svg
     :target: https://pypi.python.org/pypi/ncollpyde
 
-.. image:: https://github.com/clbarnes/ncollpyde/workflows/.github/workflows/ci.yml/badge.svg?branch=master
-    :target: https://github.com/clbarnes/ncollpyde/workflows/.github/workflows/ci.yml
+.. image:: https://github.com/clbarnes/ncollpyde/workflows/.github/workflows/ci.yml/badge.svg
+    :target: https://github.com/clbarnes/ncollpyde/actions
+    :alt: Actions Status
 
 .. image:: https://readthedocs.org/projects/ncollpyde/badge/?version=latest
     :target: https://ncollpyde.readthedocs.io/en/latest/?badge=latest
