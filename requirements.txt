@@ -6,7 +6,7 @@ numpy==1.19.2
 trimesh[easy]==3.8.12
 
 # test
-meshio==3.3.1
+meshio==4.3.1
 pytest==6.1.1
 pytest-runner==5.2
 

@@ -48,27 +48,27 @@ def test_many(mesh, threads):
 
 
 def test_no_validation(mesh):
-    triangles = mesh.cells["triangle"]
+    triangles = mesh.cells_dict["triangle"]
     Volume(mesh.points, triangles, True)
 
 
 @pytest.mark.skipif(not trimesh, reason="Requires trimesh")
 def test_can_repair_hole(mesh):
-    triangles = mesh.cells["triangle"]
+    triangles = mesh.cells_dict["triangle"]
     triangles = triangles[:-1]
     Volume(mesh.points, triangles, True)
 
 
 @pytest.mark.skipif(not trimesh, reason="Requires trimesh")
 def test_can_repair_inversion(mesh):
-    triangles = mesh.cells["triangle"]
+    triangles = mesh.cells_dict["triangle"]
     triangles[-1] = triangles[-1, ::-1]
     Volume(mesh.points, triangles, True)
 
 
 @pytest.mark.skipif(not trimesh, reason="Requires trimesh")
 def test_can_repair_inversions(mesh):
-    triangles = mesh.cells["triangle"]
+    triangles = mesh.cells_dict["triangle"]
     triangles = triangles[:, ::-1]
     Volume(mesh.points, triangles, True)
 
@@ -78,7 +78,7 @@ def test_inversions_repaired(simple_mesh):
     center = [0.5, 0.5, 0.5]
 
     orig_points = simple_mesh.points
-    orig_triangles = simple_mesh.cells["triangle"]
+    orig_triangles = simple_mesh.cells_dict["triangle"]
     assert center in Volume(orig_points, orig_triangles)
 
     inv_triangles = orig_triangles[:, ::-1]
@@ -89,7 +89,7 @@ def test_inversions_repaired(simple_mesh):
 
 def test_points(mesh):
     points = mesh.points
-    vol = Volume(mesh.points, mesh.cells["triangle"])
+    vol = Volume(mesh.points, mesh.cells_dict["triangle"])
 
     actual = sorted(tuple(p) for p in vol.points)
     expected = sorted(tuple(p) for p in points)
@@ -99,7 +99,7 @@ def test_points(mesh):
 @pytest.mark.skipif(not trimesh, reason="Requires trimesh")
 def test_triangles(mesh):
     points = mesh.points
-    triangles = mesh.cells["triangle"]
+    triangles = mesh.cells_dict["triangle"]
     expected = trimesh.Trimesh(points, triangles)
 
     vol = Volume(mesh.points, triangles)
@@ -110,7 +110,7 @@ def test_triangles(mesh):
 
 def test_extents(mesh):
     points = mesh.points
-    vol = Volume(mesh.points, mesh.cells["triangle"])
+    vol = Volume(mesh.points, mesh.cells_dict["triangle"])
 
     expected = np.array([points.min(axis=0), points.max(axis=0)], np.float32)
     actual = vol.extents
@@ -120,7 +120,7 @@ def test_extents(mesh):
 
 def test_points_roundtrip(mesh):
     points = mesh.points
-    vol = Volume(mesh.points, mesh.cells["triangle"])
+    vol = Volume(mesh.points, mesh.cells_dict["triangle"])
 
     expected = np.array(sorted(tuple(p) for p in points), dtype=np.float32)
     actual = np.array(sorted(tuple(p) for p in vol.points), dtype=np.float32)
@@ -130,7 +130,7 @@ def test_points_roundtrip(mesh):
 
 def test_extents_validity(mesh):
     points = mesh.points
-    vol = Volume(mesh.points, mesh.cells["triangle"])
+    vol = Volume(mesh.points, mesh.cells_dict["triangle"])
 
     expected = np.array([points.min(axis=0), points.max(axis=0)], np.float32)
     actual = vol.extents

@@ -216,7 +216,12 @@ class Volume:
         """
         try:
             return cls(
-                mesh.points, mesh.cells["triangle"], validate, threads, n_rays, ray_seed
+                mesh.points,
+                mesh.cells_dict["triangle"],
+                validate,
+                threads,
+                n_rays,
+                ray_seed,
             )
         except KeyError:
             raise ValueError("Must have triangle cells")

@@ -50,7 +50,7 @@ Usage
     import meshio
     mesh = meshio.read("tests/teapot.stl")
     vertices = mesh.points
-    triangles = mesh.cells["triangle"]
+    triangles = mesh.cells_dict["triangle"]
 
     # use this library
     from ncollpyde import Volume
@@ -74,6 +74,9 @@ Containment checks:
 
     # checks can be parallelised
     volume.contains(np.random.random((1000, 3)), threads=4)
+
+
+Note that v0.11 was the last to support ``meshio < 4.0``.
 
 Known issues
 ------------

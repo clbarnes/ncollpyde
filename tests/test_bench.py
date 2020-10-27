@@ -144,7 +144,7 @@ def pyoctree_volume(mesh):
         pytest.skip("pyoctree not available")
     else:
         vertices = np.asarray(mesh.points, dtype=np.float64, order="C")
-        faces = np.asarray(mesh.cells["triangle"], dtype=np.int32, order="C")
+        faces = np.asarray(mesh.cells_dict["triangle"], dtype=np.int32, order="C")
         octree = pyoctree.PyOctree(vertices, faces)
         return PyOctreeWrapper(vertices, faces, octree)
 
@@ -161,7 +161,7 @@ def trimesh_volume(mesh):
     except ImportError:
         pytest.skip("trimesh not available")
     else:
-        return trimesh.Trimesh(vertices=mesh.points, faces=mesh.cells["triangle"])
+        return trimesh.Trimesh(vertices=mesh.points, faces=mesh.cells_dict["triangle"])
 
 
 @pytest.fixture
