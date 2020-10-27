@@ -3,7 +3,7 @@ use std::iter::repeat_with;
 
 use ncollide3d::bounding_volume::{BoundingSphere, HasBoundingVolume};
 use ncollide3d::math::{Point, Vector};
-use ncollide3d::nalgebra::Isometry3;
+use ncollide3d::na::Isometry3;
 use ncollide3d::shape::{TriMesh, TriMeshFace};
 use pyo3::prelude::*;
 use rand::SeedableRng;
@@ -118,7 +118,7 @@ impl TriMeshWrapper {
 
     pub fn aabb(&self, _py: Python) -> (Vec<Precision>, Vec<Precision>) {
         let aabb = self.mesh.aabb();
-        (point_to_vec(aabb.mins()), point_to_vec(aabb.maxs()))
+        (point_to_vec(&aabb.mins), point_to_vec(&aabb.maxs))
     }
 
     pub fn intersections(

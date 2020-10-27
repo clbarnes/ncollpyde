@@ -20,9 +20,9 @@ dependencies = [
 
 [[package]]
 name = "approx"
-version = "0.3.2"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0e60b75072ecd4168020818c0107f2857bb6c4e64252d8d3983f6263b40a5c3"
+checksum = "3f2a05fd1bd10b2527e20a2cd32d8873d115b8b39fe219ee25f42a8aca6ba278"
 dependencies = [
  "num-traits",
 ]
@@ -403,11 +403,12 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
 name = "generic-array"
-version = "0.13.2"
+version = "0.14.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ed1e761351b56f54eb9dcd0cfaca9fd0daecf93918e1cfc01c8a3d26ee7adcd"
+checksum = "501466ecc8a30d1d3b7fc9229b122b2ce8ed6e9d9223f1138d4babb253e51817"
 dependencies = [
  "typenum",
+ "version_check",
 ]
 
 [[package]]
@@ -745,9 +746,9 @@ dependencies = [
 
 [[package]]
 name = "nalgebra"
-version = "0.21.1"
+version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6b6147c3d50b4f3cdabfe2ecc94a0191fd3d6ad58aefd9664cf396285883486"
+checksum = "02f2c3d9ba22f24e44de8652a9745d5985ce158a5081b04e7e75a5091ba7ac43"
 dependencies = [
  "approx",
  "generic-array",
@@ -763,9 +764,9 @@ dependencies = [
 
 [[package]]
 name = "ncollide3d"
-version = "0.23.2"
+version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc05c110986c3e9d2028a865c8aa195739e4f720afcee2d4a3753dc11e0c4f46"
+checksum = "51e5ace7e29455ce4c7acd02969cd5ff85c18cd5c3d49a979984438b0ca2dc46"
 dependencies = [
  "approx",
  "bitflags",
@@ -795,11 +796,10 @@ dependencies = [
 
 [[package]]
 name = "num-complex"
-version = "0.2.4"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6b19411a9719e753aff12e5187b74d60d3dc449ec3f4dc21e3989c3f554bc95"
+checksum = "b05ad05bd8977050b171b3f6b48175fea6e0565b7981059b486075e1026a9fb5"
 dependencies = [
- "autocfg",
  "num-traits",
 ]
 
@@ -815,9 +815,9 @@ dependencies = [
 
 [[package]]
 name = "num-rational"
-version = "0.2.4"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c000134b5dbf44adc5cb772486d335293351644b801551abe8f75c84cfa4aef"
+checksum = "a5b4d7360f362cfb50dde8143501e6940b22f644be75a4cc90b2d81968908138"
 dependencies = [
  "autocfg",
  "num-integer",
@@ -906,6 +906,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "paste"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba7ae1a2180ed02ddfdb5ab70c70d596a26dd642e097bb6fe78b1bde8588ed97"
+
+[[package]]
 name = "paste-impl"
 version = "0.1.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -983,25 +989,25 @@ dependencies = [
 
 [[package]]
 name = "pyo3"
-version = "0.11.1"
+version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ca8710ffa8211c9a62a8a3863c4267c710dc42a82a7fd29c97de465d7ea6b7d"
+checksum = "a9b90d637542bbf29b140fdd38fa308424073fd2cdf641a5680aed8020145e3c"
 dependencies = [
  "ctor",
  "indoc",
  "inventory",
  "libc",
  "parking_lot",
- "paste",
+ "paste 0.1.18",
  "pyo3cls",
  "unindent",
 ]
 
 [[package]]
 name = "pyo3-derive-backend"
-version = "0.11.1"
+version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "58ad070bf6967b0d29ea74931ffcf9c6bbe8402a726e9afbeafadc0a287cc2b3"
+checksum = "cee2c9fb095acb885ab7e85acc7c8e95da8c4bc7cc4b4ea64b566dfc8c91046a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1010,9 +1016,9 @@ dependencies = [
 
 [[package]]
 name = "pyo3cls"
-version = "0.11.1"
+version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3fa17e1ea569d0bf3b7c00f2a9eea831ca05e55dd76f1794c541abba1c64baa"
+checksum = "f12fdd8a2f217d003c93f9819e3db1717b2e89530171edea4c0deadd90206f50"
 dependencies = [
  "pyo3-derive-backend",
  "quote",
@@ -1068,10 +1074,11 @@ dependencies = [
 
 [[package]]
 name = "rand_distr"
-version = "0.2.2"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96977acbdd3a6576fb1d27391900035bf3863d4a16422973a409b488cf29ffb2"
+checksum = "c9e9532ada3929fb8b2e9dbe28d1e06c9b2cc65813f074fcb6bd5fbefeff9d56"
 dependencies = [
+ "num-traits",
  "rand",
 ]
 
@@ -1265,14 +1272,14 @@ dependencies = [
 
 [[package]]
 name = "simba"
-version = "0.1.5"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb931b1367faadea6b1ab1c306a860ec17aaa5fa39f367d0c744e69d971a1fb2"
+checksum = "17bfe642b1728a6e89137ad428ef5d4738eca4efaba9590f9e110b8944028621"
 dependencies = [
  "approx",
  "num-complex",
  "num-traits",
- "paste",
+ "paste 1.0.2",
 ]
 
 [[package]]

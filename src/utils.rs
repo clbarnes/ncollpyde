@@ -1,5 +1,5 @@
 use ncollide3d::math::{Isometry, Point, Vector};
-use ncollide3d::nalgebra::RealField;
+use ncollide3d::na::RealField;
 use ncollide3d::query::{PointQuery, Ray, RayCast};
 use ncollide3d::shape::TriMesh;
 use rand::Rng;
@@ -77,7 +77,7 @@ pub fn points_cross_mesh<T: RealField>(
 
 #[cfg(test)]
 mod tests {
-    use ncollide3d::nalgebra::Point3;
+    use ncollide3d::na::Point3;
     use std::fs::OpenOptions;
     use std::path::PathBuf;
     use stl_io::read_stl;
