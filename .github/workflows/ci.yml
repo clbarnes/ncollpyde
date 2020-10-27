@@ -41,7 +41,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.6', '3.7', '3.8', '3.9']
+        python-version: ['3.6', '3.7', '3.8']  #, '3.9']
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
@@ -51,8 +51,6 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - if: ${{ matrix.python-version == '3.9' }}
-        run: sudo apt-get install libgeos-c1v5
       - run: |
           sudo apt-get install libspatialindex-dev
           pip install -U pip wheel
@@ -69,7 +67,7 @@ jobs:
   deploy:
     strategy:
       matrix:
-        python-version: ['3.6', '3.7', '3.8', '3.9']
+        python-version: ['3.6', '3.7', '3.8']  #, '3.9']
         os: [macos-latest, windows-latest, ubuntu-18.04]
     needs: [lint-rust, lint-python, test-rust, test-python]
     runs-on: ${{ matrix.os }}
