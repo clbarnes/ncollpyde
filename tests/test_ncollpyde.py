@@ -47,6 +47,12 @@ def test_many(mesh, threads):
     assert np.array_equal(vol.contains(points, threads=threads), expected)
 
 
+def test_0_rays(mesh):
+    vol = Volume.from_meshio(mesh, n_rays=0)
+    points = [p for p, _ in points_expected]
+    assert np.array_equal(vol.contains(points), [False] * len(points))
+
+
 def test_no_validation(mesh):
     triangles = mesh.cells_dict["triangle"]
     Volume(mesh.points, triangles, True)
@@ -210,3 +216,21 @@ def test_intersections(simple_volume, src, tgt, intersects, is_bf):
         assert is_bf == backface[0]
     else:
         assert is_bf is None
+
+
+@pytest.mark.parametrize("threads", [None, True, 0, 1, 2])
+def test_intersections_threads(simple_volume, threads):
+    sources = [
+        [0.5, 0.5, -0.5],
+        [0.5, 0.5, 0.5],
+        [0.5, 0.5, 1.5],
+    ]
+    targets = [
+        [1.5, 0.5, -0.5],
+        [1.5, 0.5, 0.5],
+        [1.5, 0.5, 1.5],
+    ]
+
+    idxs, _, _ = simple_volume.intersections(sources, targets, threads)
+    assert len(idxs) == 1
+    assert idxs[0] == 1
