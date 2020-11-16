@@ -229,9 +229,7 @@ def test_pyoctree_contains(
 
 @pytest.mark.benchmark(group=CONTAINS_PARALLEL)
 @pytest.mark.parametrize("threads", [0, 1, 2, 4, 8, 16])
-def test_ncollpyde_contains_threaded(
-    mesh, sample_points, expected, benchmark, threads
-):
+def test_ncollpyde_contains_threaded(mesh, sample_points, expected, benchmark, threads):
     if threads > CPU_COUNT:
         pytest.skip(f"Wanted {threads} threads, only have {CPU_COUNT} CPUs")
     ncollpyde_volume = Volume.from_meshio(mesh, n_rays=3, threads=threads)
