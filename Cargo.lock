@@ -783,7 +783,7 @@ dependencies = [
 
 [[package]]
 name = "ncollpyde"
-version = "0.12.0"
+version = "0.13.0"
 dependencies = [
  "cargo-release",
  "ncollide3d",
