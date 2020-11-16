@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 N_CPUS = cpu_count()
 DEFAULT_THREADS = 0
 DEFAULT_RAYS = 3
+DEFAULT_SEED = 1991
 
 PRECISION = np.dtype(_precision())
 
@@ -41,9 +42,9 @@ class Volume:
         validate=False,
         threads=None,
         n_rays=DEFAULT_RAYS,
-        ray_seed=None,
+        ray_seed=DEFAULT_SEED,
     ):
-        """
+        f"""
         Create a volume described by a triangular mesh with N vertices and M triangles.
 
         :param vertices: Nx3 array-like of floats, coordinates of triangle corners
@@ -55,7 +56,7 @@ class Volume:
             Otherwise, only very basic checks are made.
         :param threads: optional number or True, sets default threading for containment
             checks with this instance. Can also be set on the class.
-        :param n_rays: int (default 3), number of rays used to check containment.
+        :param n_rays: int (default {DEFAULT_RAYS}), rays used to check containment.
             The underlying library sometimes reports false positives:
             casting multiple rays drastically reduces the chances of this.
             As the bug only affects ray casts and only produces false positives,
@@ -63,7 +64,7 @@ class Volume:
                 - the point is not in the bounding box
                 - the point is on the hull
                 - one ray reports that the point is external.
-        :param ray_seed: int >=0, seed used for generating the rays.
+        :param ray_seed: int >=0 (default {DEFAULT_SEED}), used for generating rays.
             If None, use a random seed.
         """
         vertices = np.asarray(vertices, self.dtype)
