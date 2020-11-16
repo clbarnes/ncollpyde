@@ -159,6 +159,9 @@ class Volume:
         Line segments are defined by their start (source) and end (target) points.
         Only the first intersection for a given line segment is reported.
 
+        Even if there is only one line segment to check,
+        the argument arrays must have 2 dimensions, e.g. ``[[0, 0, 0]], [[1, 1, 1]]``.
+
         The output arrays are:
 
         * Which line segment the intersection refers to,
@@ -167,7 +170,9 @@ class Volume:
         * Whether the intersection is with the inside face of the mesh
 
         N.B. the inside face check will report True
-        for cases where a line touches ("skims") an external edge.
+        for cases where a line touches ("skims") an external edge; see
+        https://github.com/dimforge/ncollide/issues/335
+        .
 
         :param src_points: Nx3 array-like
         :param tgt_points: Nx3 array-like
@@ -186,7 +191,7 @@ class Volume:
         if src.shape[1:] != (3,):
             raise ValueError("Points must be Nx3 array-like")
 
-        idxs, points, bfs = self._impl.intersections(src.tolist(), tgt.tolist())
+        idxs, points, bfs = self._impl.intersections_many(src.tolist(), tgt.tolist())
 
         return (
             np.array(idxs, np.uint64),

@@ -121,31 +121,32 @@ impl TriMeshWrapper {
         (point_to_vec(&aabb.mins), point_to_vec(&aabb.maxs))
     }
 
-    pub fn intersections(
+    pub fn intersections_many(
         &self,
-        _py: Python,
+        py: Python,
         src_points: Vec<Vec<Precision>>,
         tgt_points: Vec<Vec<Precision>>,
     ) -> (Vec<usize>, Vec<Vec<Precision>>, Vec<bool>) {
-        let mut idxs = Vec::default();
-        let mut intersections = Vec::default();
-        let mut is_backface = Vec::default();
+        py.allow_threads(|| {
+            let mut idxs = Vec::default();
+            let mut intersections = Vec::default();
+            let mut is_backface = Vec::default();
 
-        for (idx, point, is_bf) in src_points
-            .into_iter()
-            .zip(tgt_points.into_iter())
-            .enumerate()
-            .filter_map(|(i, (src, tgt))| {
-                points_cross_mesh(&self.mesh, &vec_to_point(src), &vec_to_point(tgt))
-                    .map(|o| (i, o.0, o.1))
-            })
-        {
-            idxs.push(idx);
-            intersections.push(point_to_vec(&point));
-            is_backface.push(is_bf);
-        }
+            for (idx, point, is_bf) in src_points
+                .into_iter()
+                .zip(tgt_points.into_iter())
+                .enumerate()
+                .filter_map(|(i, (src, tgt))| {
+                    points_cross_mesh(&self.mesh, &vec_to_point(src), &vec_to_point(tgt))
+                        .map(|o| (i, o.0, o.1))
+                })
+            {
+                idxs.push(idx);
+                intersections.push(point_to_vec(&point));
+                is_backface.push(is_bf);
+            }
 
-        (idxs, intersections, is_backface)
+            (idxs, intersections, is_backface)
     }
 }
 
