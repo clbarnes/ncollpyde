@@ -147,6 +147,35 @@ impl TriMeshWrapper {
             }
 
             (idxs, intersections, is_backface)
+        })
+    }
+
+    pub fn intersections_many_threaded(
+        &self,
+        py: Python,
+        src_points: Vec<Vec<Precision>>,
+        tgt_points: Vec<Vec<Precision>>,
+        threads: usize,
+    ) -> (Vec<usize>, Vec<Vec<Precision>>, Vec<bool>) {
+        py.allow_threads(|| {
+            let pool = rayon::ThreadPoolBuilder::new()
+                .num_threads(threads)
+                .build()
+                .unwrap();
+            pool.install(|| {
+                let (idxs, (intersections, is_backface)) = src_points
+                    .into_par_iter()
+                    .zip(tgt_points.into_par_iter())
+                    .enumerate()
+                    .filter_map(|(i, (src, tgt))| {
+                        points_cross_mesh(&self.mesh, &vec_to_point(src), &vec_to_point(tgt))
+                            .map(|o| (i, (point_to_vec(&o.0), o.1)))
+                    })
+                    .unzip();
+
+                (idxs, intersections, is_backface)
+            })
+        })
     }
 }
 

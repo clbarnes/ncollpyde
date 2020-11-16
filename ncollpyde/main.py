@@ -120,6 +120,28 @@ class Volume:
             raise ValueError("Item is not a 3-length array-like")
         return self._impl.contains(item.tolist())
 
+    def _threadcount(self, threads):
+        """
+        If ``threads`` is ``None``, the instance's ``threads`` attribute (default 0)
+        is used.
+        If ``threads`` is ``True``, ``threads`` is set to the number of CPUs.
+        If ``threads`` is 0, the query will be done in serial (but the GIL will be
+        released)
+        If ``threads`` is something else (a number), the query will be parallelised
+        over that number of threads.
+
+        :return: int, number of threads to use (0 for serial)
+        """
+        if threads is None:
+            threads = self.threads
+
+        if not threads:
+            return 0
+        elif threads is True:
+            return N_CPUS
+        else:
+            return threads
+
     def contains(
         self, coords: ArrayLike2D, threads: Optional[Union[int, bool]] = None
     ) -> np.ndarray:
@@ -140,19 +162,21 @@ class Volume:
         if coords.shape[1:] != (3,):
             raise ValueError("Coords is not a Nx3 array-like")
 
-        if threads is None:
-            threads = self.threads
+        coords_list = coords.tolist()
 
-        if not threads:
-            out = self._impl.contains_many(coords.tolist())
+        n_threads = self._threadcount(threads)
+        if n_threads == 0:
+            out = self._impl.contains_many(coords_list)
         else:
-            if threads is True:
-                threads = N_CPUS
-            out = self._impl.contains_many_threaded(coords.tolist(), threads)
+            out = self._impl.contains_many_threaded(coords_list, n_threads)
+
         return np.array(out, dtype=bool)
 
     def intersections(
-        self, src_points: ArrayLike2D, tgt_points: ArrayLike2D
+        self,
+        src_points: ArrayLike2D,
+        tgt_points: ArrayLike2D,
+        threads: Optional[Union[int, bool]] = None,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Get intersections between line segments and volume.
 
@@ -176,6 +200,14 @@ class Volume:
 
         :param src_points: Nx3 array-like
         :param tgt_points: Nx3 array-like
+        :param threads: None,
+            If ``threads`` is ``None``, the instance's ``threads`` attribute (default 0)
+            is used.
+            If ``threads`` is ``True``, ``threads`` is set to the number of CPUs.
+            If ``threads`` is 0, the query will be done in serial (but the GIL will be
+            released)
+            If ``threads`` is something else (a number), the query will be parallelised
+            over that number of threads.
         :raises ValueError: Inputs have different shapes or are not Nx3
         :return: tuple of
           uint array of indices (N),
@@ -191,7 +223,16 @@ class Volume:
         if src.shape[1:] != (3,):
             raise ValueError("Points must be Nx3 array-like")
 
-        idxs, points, bfs = self._impl.intersections_many(src.tolist(), tgt.tolist())
+        src_list = src.tolist()
+        tgt_list = tgt.tolist()
+
+        n_threads = self._threadcount(threads)
+        if n_threads == 0:
+            idxs, points, bfs = self._impl.intersections_many(src_list, tgt_list)
+        else:
+            idxs, points, bfs = self._impl.intersections_many_threaded(
+                src_list, tgt_list, n_threads
+            )
 
         return (
             np.array(idxs, np.uint64),
