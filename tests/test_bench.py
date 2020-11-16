@@ -7,8 +7,12 @@ from ncollpyde import Volume
 
 SAMPLES_PER_DIM = 10
 PADDING = 0.2
-THREADS = 3
 ITERATIONS = 20
+
+CONTAINS_SERIAL = "containment serial"
+INTERSECTION_SERIAL = "intersection serial"
+CONTAINS_PARALLEL = "containment parallel"
+INTERSECTION_PARALLEL = "intersection parallel"
 
 
 class PyOctreeWrapper:
@@ -192,38 +196,25 @@ def check_internals_equal(expected, actual):
     assert np.array_equal(expected, actual)
 
 
-def test_trimesh(trimesh_volume, sample_points, expected, benchmark):
+@pytest.mark.benchmark(group=CONTAINS_SERIAL)
+def test_trimesh_contains(trimesh_volume, sample_points, expected, benchmark):
     actual = benchmark(trimesh_volume.contains, sample_points)
     check_internals_equal(expected, actual)
 
 
+@pytest.mark.benchmark(group=CONTAINS_SERIAL)
 @pytest.mark.parametrize("n_rays", [0, 1, 2, 4, 8, 16])
-def test_ncollpyde(mesh, n_rays, sample_points, expected, benchmark):
+def test_ncollpyde_contains(mesh, n_rays, sample_points, expected, benchmark):
     ncollpyde_volume = Volume.from_meshio(mesh, n_rays=n_rays)
+    ncollpyde_volume.threads = 0
     actual = benchmark(ncollpyde_volume.contains, sample_points)
     if n_rays:
         check_internals_equal(expected, actual)
 
 
-# def test_ncollpyde_threaded(
-#     ncollpyde_volume: Volume, sample_points, expected, benchmark
-# ):
-#     actual = benchmark(ncollpyde_volume.contains, sample_points, threads=THREADS)
-#     check_internals_equal(expected, actual)
-
-
-# def test_ncollpyde_complex(sez_right: Volume, benchmark):
-#     sample_points = make_sample_points(sez_right.extents, 0.1, 100)
-#     benchmark(sez_right.contains, sample_points)
-
-
-# def test_ncollpyde_complex_threads(sez_right: Volume, benchmark):
-#     sample_points = make_sample_points(sez_right.extents, 0.1, 100)
-#     benchmark(sez_right.contains, sample_points, threads=THREADS)
-
-
+@pytest.mark.benchmark(group=CONTAINS_SERIAL)
 @pytest.mark.parametrize("safe", [True, False], ids=lambda x: ["FAST", "SAFE"][int(x)])
-def test_pyoctree(
+def test_pyoctree_contains(
     pyoctree_volume: PyOctreeWrapper, safe, sample_points, expected, benchmark
 ):
     actual = benchmark(pyoctree_volume.contains, sample_points, safe)
@@ -231,3 +222,13 @@ def test_pyoctree(
         check_internals_equal(expected, actual)
     else:
         pytest.xfail("pyoctree results are not consistent unless in SAFE mode")
+
+
+@pytest.mark.benchmark(group=CONTAINS_PARALLEL)
+@pytest.mark.parametrize("threads", [0, 1, 2, 4, 8])
+def test_ncollpyde_contains_threaded(
+    mesh, sample_points, expected, benchmark, threads
+):
+    ncollpyde_volume = Volume.from_meshio(mesh, n_rays=3, threads=threads)
+    actual = benchmark(ncollpyde_volume.contains, sample_points)
+    check_internals_equal(expected, actual)
