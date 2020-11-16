@@ -79,7 +79,8 @@ Note that v0.11 was the last to support ``meshio < 4.0``.
 Known issues
 ------------
 
-* Benchmarks suggest that multithreaded performance is about the same as serial
+* Performance gains for multi-threaded queries are underwhelming, especially for ray intersections: see `this issue <https://github.com/clbarnes/ncollpyde/issues/12>`
 * Very rare false positives for containment
    * Due to a `bug in the underlying library <https://github.com/rustsim/ncollide/issues/335>`_
    * Only happens when the point is outside the mesh and fires a ray which touches a single edge or vertex of the mesh.
+   * Also affects ``is_backface`` result for ray intersection checks

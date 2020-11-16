@@ -1,3 +1,5 @@
+from multiprocessing import cpu_count
+
 import numpy as np
 
 import meshio
@@ -8,6 +10,7 @@ from ncollpyde import Volume
 SAMPLES_PER_DIM = 10
 PADDING = 0.2
 ITERATIONS = 20
+CPU_COUNT = cpu_count()
 
 CONTAINS_SERIAL = "containment serial"
 INTERSECTION_SERIAL = "intersection serial"
@@ -225,10 +228,27 @@ def test_pyoctree_contains(
 
 
 @pytest.mark.benchmark(group=CONTAINS_PARALLEL)
-@pytest.mark.parametrize("threads", [0, 1, 2, 4, 8])
+@pytest.mark.parametrize("threads", [0, 1, 2, 4, 8, 16])
 def test_ncollpyde_contains_threaded(
     mesh, sample_points, expected, benchmark, threads
 ):
+    if threads > CPU_COUNT:
+        pytest.skip(f"Wanted {threads} threads, only have {CPU_COUNT} CPUs")
     ncollpyde_volume = Volume.from_meshio(mesh, n_rays=3, threads=threads)
     actual = benchmark(ncollpyde_volume.contains, sample_points)
     check_internals_equal(expected, actual)
+
+
+@pytest.mark.benchmark(group=INTERSECTION_PARALLEL)
+@pytest.mark.parametrize("threads", [0, 1, 2, 4, 8, 16])
+def test_ncollpyde_intersection(mesh, benchmark, threads):
+    if threads > CPU_COUNT:
+        pytest.skip(f"Wanted {threads} threads, only have {CPU_COUNT} CPUs")
+
+    n_edges = 1_000
+    rng = np.random.default_rng(1991)
+    starts = rng.random((n_edges, 3)) * 2 - 0.5
+    stops = rng.random((n_edges, 3)) * 2 - 0.5
+
+    vol = Volume.from_meshio(mesh, threads=threads)
+    benchmark(vol.intersections, starts, stops)
