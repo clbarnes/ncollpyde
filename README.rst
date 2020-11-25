@@ -6,7 +6,7 @@ ncollpyde
 .. image:: https://img.shields.io/pypi/v/ncollpyde.svg
     :target: https://pypi.python.org/pypi/ncollpyde
 
-.. image:: https://github.com/clbarnes/ncollpyde/workflows/.github/workflows/ci.yml/badge.svg
+.. image:: https://github.com/clbarnes/ncollpyde/workflows/.github/workflows/ci.yaml/badge.svg
     :target: https://github.com/clbarnes/ncollpyde/actions
     :alt: Actions Status
 
@@ -23,7 +23,7 @@ A python wrapper around a subset of the ncollide rust library
 
 
 * Free software: MIT License
-* Documentation: https://ncollpyde.readthedocs.io.
+.. * Documentation: https://ncollpyde.readthedocs.io.
 
 Install
 -------
