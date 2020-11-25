@@ -69,20 +69,20 @@ lint-rust:
 lint: lint-python lint-rust
 
 test: ## run tests quickly with the default Python
-	maturin develop
+	maturin develop && \
 	pytest -v
 
 coverage: ## check code coverage quickly with the default Python
-	coverage run --source ncollpyde -m pytest
-	coverage report -m
-	coverage html
+	coverage run --source ncollpyde -m pytest && \
+	coverage report -m && \
+	coverage html && \
 	$(BROWSER) htmlcov/index.html
 
 docs: ## generate Sphinx HTML documentation, including API docs
-	rm -f docs/ncollpyde.rst
-	rm -f docs/modules.rst
-	sphinx-apidoc -o docs/ ncollpyde
-	$(MAKE) -C docs clean
+	rm -f docs/ncollpyde.rst && \
+	rm -f docs/modules.rst && \
+	sphinx-apidoc -o docs/ ncollpyde && \
+	$(MAKE) -C docs clean && \
 	$(MAKE) -C docs html
 
 view-docs:
@@ -95,15 +95,15 @@ release: dist ## package and upload a release
 	twine upload dist/*
 
 dist: clean ## builds source and wheel package
-	python setup.py sdist
-	python setup.py bdist_wheel
+	python setup.py sdist bdist_wheel && \
 	ls -l dist
 
 install: clean ## install the package to the active Python's site-packages
 	pip install .
 
 install-dev: clean
-	pip install -r requirements_dev.txt && pip install -e .
+	pip install -r requirements_dev.txt && \
+	pip install -e .
 
 patch: docs
 	bumpversion patch
