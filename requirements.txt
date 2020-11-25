@@ -22,3 +22,4 @@ flake8==3.8.4
 coverage==5.3
 Sphinx==3.2.1
 pickle5==0.0.11
+mypy==0.790
