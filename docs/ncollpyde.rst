@@ -12,6 +12,13 @@ ncollpyde.main module
    :undoc-members:
    :show-inheritance:
 
+ncollpyde.ncollpyde module
+--------------------------
+
+.. automodule:: ncollpyde.ncollpyde
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Module contents
 ---------------
