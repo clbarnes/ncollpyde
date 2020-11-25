@@ -57,9 +57,16 @@ fmt:
 	black $(PY_PATHS)
 	cargo fmt
 
-lint: ## check style with flake8
+lint-python:
 	flake8 $(PY_PATHS)
 	black --check $(PY_PATHS)
+	mypy $(PY_PATHS)
+
+lint-rust:
+	cargo fmt -- --check
+	cargo clippy
+
+lint: lint-python lint-rust
 
 test: ## run tests quickly with the default Python
 	maturin develop
