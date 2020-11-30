@@ -33,7 +33,10 @@ ArrayLike2D = Union[np.ndarray, Sequence[Sequence[Number]]]
 
 class Volume:
     dtype = PRECISION
+    """Float data type used internally"""
+
     threads = DEFAULT_THREADS
+    """Default number of threads used"""
 
     def __init__(
         self,
