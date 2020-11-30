@@ -12,7 +12,7 @@ try:
 except ImportError:
     trimesh = None
 
-from ncollpyde import Volume
+from ncollpyde import Volume, PRECISION
 
 
 points_expected = [
@@ -234,3 +234,37 @@ def test_intersections_threads(simple_volume, threads):
     idxs, _, _ = simple_volume.intersections(sources, targets, threads)
     assert len(idxs) == 1
     assert idxs[0] == 1
+
+
+@pytest.mark.parametrize("steps", list(range(-5, 6)))
+@pytest.mark.parametrize("angle", ["edge", "face"])
+def test_near_miss(simple_volume: Volume, steps, angle):
+    if angle == "edge":
+        start_stop = np.array(
+            [
+                [-0.5, 0.5, 0.5],
+                [0.5, 0.5, -0.5],
+            ],
+            PRECISION,
+        )
+    elif angle == "face":
+        start_stop = np.array(
+            [
+                [-1, 0.5, 0],
+                [2, 0.5, 0],
+            ],
+            PRECISION,
+        )
+    else:
+        raise ValueError("Unknown angle '{}', wanted 'edge' or 'face'".format(angle))
+
+    expected_hit = steps >= 0
+    fill = np.inf if expected_hit else -np.inf
+    toward = np.full(2, fill, PRECISION)
+
+    for _ in range(abs(steps)):
+        start_stop[:, 2] = np.nextafter(start_stop[:, 2], toward)
+
+    idxs, _, _ = simple_volume.intersections([start_stop[0]], [start_stop[1]])
+    result_hit = len(idxs) > 0
+    assert expected_hit == result_hit
