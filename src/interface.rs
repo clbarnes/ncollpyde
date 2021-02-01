@@ -6,11 +6,14 @@ use ncollide3d::math::{Point, Vector};
 use ncollide3d::na::Isometry3;
 use ncollide3d::shape::{TriMesh, TriMeshFace};
 use pyo3::prelude::*;
+use numpy::{ToPyArray, PyArray, PyArray1, PyArray2};
 use rand::SeedableRng;
 use rand_pcg::Pcg64Mcg;
 use rayon::prelude::*;
-
+use ndarray::Axis;
+use ndarray::parallel::prelude::*;
 use crate::utils::{mesh_contains_point, points_cross_mesh, random_dir, Precision, PRECISION};
+
 
 fn vec_to_point<T: 'static + Debug + PartialEq + Copy>(v: Vec<T>) -> Point<T> {
     Point::new(v[0], v[1], v[2])
@@ -40,13 +43,13 @@ pub struct TriMeshWrapper {
 impl TriMeshWrapper {
     #[new]
     pub fn __new__(
-        points: Vec<Vec<Precision>>,
-        indices: Vec<Vec<usize>>,
+        points: PyArray2<Precision>,
+        indices: PyArray2<usize>,
         n_rays: usize,
         ray_seed: u64,
     ) -> Self {
-        let points2 = points.into_iter().map(vec_to_point).collect();
-        let indices2 = indices.into_iter().map(vec_to_point).collect();
+        let points2 = points.as_array().outer_iter().map(|a| Point::new(a[0], a[1], a[3])).collect();
+        let indices2 = indices.as_array().outer_iter().map(|a| Point::new(a[0], a[1], a[3])).collect();
         let mesh = TriMesh::new(points2, indices2, None);
 
         if n_rays > 0 {
@@ -69,39 +72,43 @@ impl TriMeshWrapper {
         }
     }
 
-    pub fn contains(&self, _py: Python, point: Vec<Precision>) -> bool {
-        mesh_contains_point(&self.mesh, &vec_to_point(point), &self.ray_directions)
+    pub fn contains(&self, _py: Python, point: PyArray1<Precision>) -> bool {
+        let p = point.as_array();
+        mesh_contains_point(&self.mesh, &Point::new(p[0], p[1], p[2]), &self.ray_directions)
     }
 
-    pub fn contains_many(&self, py: Python, points: Vec<Vec<Precision>>) -> Vec<bool> {
-        py.allow_threads(|| {
-            points
-                .into_iter()
-                .map(|v| mesh_contains_point(&self.mesh, &vec_to_point(v), &self.ray_directions))
-                .collect()
-        })
+    pub fn contains_many<'py>(&self, py: Python<'py>, points: PyArray2<Precision>) -> &'py PyArray1<bool> {
+        let v: Vec<bool> = points
+            .as_array()
+            .outer_iter()
+            .map(|v| mesh_contains_point(&self.mesh, &Point::new(v[0], v[1], v[2]), &self.ray_directions))
+            .collect();
+        v.to_pyarray(py)
     }
 
-    pub fn contains_many_threaded(
+    pub fn contains_many_threaded<'py>(
         &self,
-        py: Python,
-        points: Vec<Vec<Precision>>,
+        py: Python<'py>,
+        points: PyArray2<Precision>,
         threads: usize,
-    ) -> Vec<bool> {
-        py.allow_threads(|| {
-            let pool = rayon::ThreadPoolBuilder::new()
-                .num_threads(threads)
-                .build()
-                .unwrap();
-            pool.install(|| {
-                points
-                    .into_par_iter()
-                    .map(|v| {
-                        mesh_contains_point(&self.mesh, &vec_to_point(v), &self.ray_directions)
-                    })
-                    .collect()
-            })
-        })
+    ) -> &'py PyArray1<bool> {
+        let arr = points.as_array();
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(threads)
+            .build()
+            .unwrap();
+        let v: Vec<bool> = pool.install(|| {
+            let mut contains = Vec::with_capacity(arr.shape()[0]);
+            arr
+                .outer_iter()
+                .into_par_iter()
+                .map(|v| {
+                    mesh_contains_point(&self.mesh, &vec_to_point(v), &self.ray_directions)
+                })
+                .collect_into_vec(&mut contains);
+            contains
+        });
+        v.to_pyarray(py)
     }
 
     pub fn points(&self, _py: Python) -> Vec<Vec<Precision>> {
