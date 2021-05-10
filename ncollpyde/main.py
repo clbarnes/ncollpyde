@@ -1,9 +1,9 @@
 import logging
-import warnings
-from numbers import Number
-from typing import Union, Sequence, Optional, TYPE_CHECKING, Tuple
-from multiprocessing import cpu_count
 import random
+import warnings
+from multiprocessing import cpu_count
+from numbers import Number
+from typing import TYPE_CHECKING, Optional, Sequence, Tuple, Union
 
 import numpy as np
 

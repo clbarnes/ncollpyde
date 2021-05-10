@@ -4,16 +4,15 @@
 """Tests for `ncollpyde` package."""
 from itertools import product
 
-import pytest
 import numpy as np
+import pytest
 
 try:
     import trimesh
 except ImportError:
     trimesh = None
 
-from ncollpyde import Volume, PRECISION
-
+from ncollpyde import PRECISION, Volume
 
 points_expected = [
     ([-2.3051376, -4.1556454, 1.9047838], True),  # internal

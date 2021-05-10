@@ -23,7 +23,7 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: '3.x'
-      - run: pip install $(grep -E '^(black|flake8|mypy)' requirements.txt)
+      - run: pip install $(grep -E '^(black|flake8|mypy|isort)' requirements.txt)
       - run: make lint-python
 
   test-rust:

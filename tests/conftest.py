@@ -1,6 +1,7 @@
+from pathlib import Path
+
 import meshio
 import pytest
-from pathlib import Path
 
 from ncollpyde import Volume
 

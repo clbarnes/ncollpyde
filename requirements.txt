@@ -15,6 +15,7 @@ pytest-runner==5.3.0
 pytest-benchmark==3.4.1
 
 # develop
+isort==5.8.0
 pip==21.1.1
 black==20.8b1
 watchdog==2.1.1

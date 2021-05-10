@@ -1,8 +1,7 @@
 from multiprocessing import cpu_count
 
-import numpy as np
-
 import meshio
+import numpy as np
 import pytest
 
 from ncollpyde import Volume
