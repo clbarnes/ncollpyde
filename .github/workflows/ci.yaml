@@ -33,6 +33,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+      - uses: Swatinem/rust-cache@v1
       - run: cargo test
 
   test-python:
@@ -46,6 +47,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+      - uses: Swatinem/rust-cache@v1
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
