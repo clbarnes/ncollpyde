@@ -22,5 +22,4 @@ watchdog==2.1.1
 flake8==3.9.2
 coverage==5.5
 Sphinx==4.0.0
-pickle5==0.0.11
 mypy==0.812
