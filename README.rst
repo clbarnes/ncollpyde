@@ -84,3 +84,4 @@ Known issues
    * Due to a `bug in the underlying library <https://github.com/rustsim/ncollide/issues/335>`_
    * Only happens when the point is outside the mesh and fires a ray which touches a single edge or vertex of the mesh.
    * Also affects ``is_backface`` result for ray intersection checks
+* manylinux-compatible wheels are built on CI but not necessarily in your local environment. Always allow CI to deploy the wheels.
