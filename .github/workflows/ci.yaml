@@ -78,9 +78,10 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: '3.9'
-      - run: pip install $(grep ^maturin requirements.txt)
-      - if: startsWith(matrix.os,'ubuntu')
-        run: maturin publish -u __token__ -p ${{ secrets.MATURIN_PASSWORD }} --interpreter
-        name: Deploy sdist
-      - run: maturin publish -u __token__ -p ${{ secrets.MATURIN_PASSWORD }} -i python --no-sdist
+      - uses: messense/maturin-action@v1
+        with:
+          maturin-version: v0.10.6
+          manylinux: auto
+          command: publish
+          args: -u __token__ -p ${{ secrets.MATURIN_PASSWORD }} --skip-existing
         name: Deploy wheels
