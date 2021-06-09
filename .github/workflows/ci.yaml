@@ -66,7 +66,6 @@ jobs:
   deploy:
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9']
         os: [macos-latest, windows-latest, ubuntu-18.04]
     needs: [lint-rust, lint-python, test-rust, test-python]
     runs-on: ${{ matrix.os }}
@@ -78,10 +77,11 @@ jobs:
           toolchain: stable
       - uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python-version }}
-      - run: pip install $(grep ^maturin requirements.txt)
-      - if: startsWith(matrix.os,'ubuntu') && matrix.python-version == '3.8'
-        run: maturin publish -u __token__ -p ${{ secrets.MATURIN_PASSWORD }} --interpreter
-        name: Deploy sdist
-      - run: maturin publish -u __token__ -p ${{ secrets.MATURIN_PASSWORD }} -i python --no-sdist
+          python-version: '3.9'
+      - uses: messense/maturin-action@v1
+        with:
+          maturin-version: v0.10.6
+          manylinux: auto
+          command: publish
+          args: -u __token__ -p ${{ secrets.MATURIN_PASSWORD }} --skip-existing
         name: Deploy wheels
