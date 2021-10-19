@@ -85,4 +85,4 @@ Known issues
    * Only happens when the point is outside the mesh and fires a ray which touches a single edge or vertex of the mesh.
    * Also affects ``is_backface`` result for ray intersection checks
 * manylinux-compatible wheels are built on CI but not necessarily in your local environment. Always allow CI to deploy the wheels.
-* If you are installing from a source distribution rather than a wheel, you need a compatible `rust toolchain <https://www.rust-lang.org/tools/install>`
+* If you are installing from a source distribution rather than a wheel, you need a compatible `rust toolchain <https://www.rust-lang.org/tools/install>`_
