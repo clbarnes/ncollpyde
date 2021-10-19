@@ -267,3 +267,20 @@ def test_near_miss(simple_volume: Volume, steps, angle):
     idxs, _, _ = simple_volume.intersections([start_stop[0]], [start_stop[1]])
     result_hit = len(idxs) > 0
     assert expected_hit == result_hit
+
+
+@pytest.mark.parametrize(["signed"], [(True,), (False,)])
+@pytest.mark.parametrize(
+    ["point", "expected"],
+    [
+        ([1, 1, 1], 0),
+        ([2, 2, 2], np.sqrt(3)),
+        ([0.5, 0.5, 0.5], -0.5),
+    ],
+)
+def test_distance_unsigned(simple_volume, point, expected, signed):
+    if not signed:
+        expected = np.abs(expected)
+    assert np.allclose(
+        simple_volume.distance([point], signed=signed), np.asarray([expected])
+    )

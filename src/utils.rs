@@ -75,6 +75,20 @@ pub fn points_cross_mesh<T: RealField>(
     .map(|i| (ray.point_at(i.toi), mesh.is_backface(i.feature)))
 }
 
+pub fn dist_from_mesh<T: RealField>(
+    mesh: &TriMesh<T>,
+    point: &Point<T>,
+    rays: Option<&[Vector<T>]>,
+) -> T {
+    let mut dist = mesh.distance_to_point(&Isometry::identity(), point, true);
+    if let Some(r) = rays {
+        if mesh_contains_point(mesh, point, r) {
+            dist = -dist;
+        }
+    }
+    dist
+}
+
 #[cfg(test)]
 mod tests {
     use ncollide3d::na::Point3;
@@ -256,5 +270,44 @@ mod tests {
     #[test]
     fn nocross() {
         assert!(get_cross([1.5, 1.5, 1.5], [2.0, 2.0, 2.0]).is_none());
+    }
+
+    fn axis_rays() -> Vec<Vector<Precision>> {
+        vec![
+            Vector::new(1.0, 0.0, 0.0),
+            Vector::new(0.0, 1.0, 0.0),
+            Vector::new(0.0, 0.0, 1.0),
+        ]
+    }
+
+    fn assert_dist(
+        mesh: &TriMesh<Precision>,
+        point: &Point<Precision>,
+        rays: Option<&[Vector<Precision>]>,
+        expected: Precision,
+    ) {
+        assert_eq!(dist_from_mesh(mesh, point, rays), expected)
+    }
+
+    #[test]
+    fn distance_signed() {
+        let rays = axis_rays();
+        let cube = cube();
+        assert_dist(&cube, &Point::new(1.0, 1.0, 1.0), Some(&rays), 0.0);
+        assert_dist(&cube, &Point::new(0.5, 0.5, 0.5), Some(&rays), -0.5);
+        assert_dist(&cube, &Point::new(2.0, 1.0, 1.0), Some(&rays), 1.0);
+        let three: Precision = 3.0;
+        assert_dist(&cube, &Point::new(2.0, 2.0, 2.0), Some(&rays), three.sqrt());
+    }
+
+    #[test]
+    fn distance_unsigned() {
+        let rays = axis_rays();
+        let cube = cube();
+        assert_dist(&cube, &Point::new(1.0, 1.0, 1.0), None, 0.0);
+        assert_dist(&cube, &Point::new(0.5, 0.5, 0.5), None, 0.5);
+        assert_dist(&cube, &Point::new(2.0, 1.0, 1.0), None, 1.0);
+        let three: Precision = 3.0;
+        assert_dist(&cube, &Point::new(2.0, 2.0, 2.0), None, three.sqrt());
     }
 }
