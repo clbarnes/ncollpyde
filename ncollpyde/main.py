@@ -146,6 +146,47 @@ class Volume:
         else:
             return threads
 
+    def distance(
+        self,
+        coords: ArrayLike2D,
+        signed: bool = True,
+        threads: Optional[Union[int, bool]] = None,
+    ) -> np.ndarray:
+        """Check the distance from the volume to multiple points (as a Px3 array-like).
+
+        Distances are reported to the boundary of the volume.
+        By default, if the point is inside the volume,
+        the distance will be reported as negative.
+        ``signed=False`` is faster but cannot distinguish
+        between internal and external points.
+
+        :param coords:
+        :param signed: bool, default True.
+            Whether distances to points inside the volume
+            should be reported as negative.
+        :param threads: None,
+            If ``threads`` is ``None``, the instance's ``threads`` attribute (default 0)
+            is used.
+            If ``threads`` is ``True``, ``threads`` is set to the number of CPUs.
+            If ``threads`` is 0, the query will be done in serial (but the GIL will be
+            released)
+            If ``threads`` is something else (a number), the query will be parallelised
+            over that number of threads.
+        :return: np.ndarray of float, the distance from the volume to each given point
+        """
+        coords = np.asarray(coords, self.dtype)
+        if coords.shape[1:] != (3,):
+            raise ValueError("Coords is not a Nx3 array-like")
+
+        coords_list = coords.tolist()
+        n_threads = self._threadcount(threads)
+        if n_threads == 0:
+            out = self._impl.distance_many(coords_list, signed)
+        else:
+            out = self._impl.distance_many_threaded(coords_list, signed, n_threads)
+
+        return np.asarray(out, dtype=self.dtype)
+
     def contains(
         self, coords: ArrayLike2D, threads: Optional[Union[int, bool]] = None
     ) -> np.ndarray:

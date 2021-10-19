@@ -15,6 +15,7 @@ CONTAINS_SERIAL = "containment serial"
 INTERSECTION_SERIAL = "intersection serial"
 CONTAINS_PARALLEL = "containment parallel"
 INTERSECTION_PARALLEL = "intersection parallel"
+DISTANCE = "distance"
 
 
 class PyOctreeWrapper:
@@ -249,3 +250,13 @@ def test_ncollpyde_intersection(mesh, benchmark, threads):
 
     vol = Volume.from_meshio(mesh, threads=threads)
     benchmark(vol.intersections, starts, stops)
+
+
+@pytest.mark.benchmark(group=DISTANCE)
+@pytest.mark.parametrize("signed", [True, False])
+def test_ncollpyde_distance(mesh, benchmark, signed):
+    n_points = 1_000
+    rng = np.random.default_rng(1991)
+    points = rng.random((n_points, 3)) * 2 - 0.5
+    vol = Volume.from_meshio(mesh)
+    benchmark(vol.distance, points, signed)

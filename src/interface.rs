@@ -10,7 +10,9 @@ use rand::SeedableRng;
 use rand_pcg::Pcg64Mcg;
 use rayon::prelude::*;
 
-use crate::utils::{mesh_contains_point, points_cross_mesh, random_dir, Precision, PRECISION};
+use crate::utils::{
+    dist_from_mesh, mesh_contains_point, points_cross_mesh, random_dir, Precision, PRECISION,
+};
 
 fn vec_to_point<T: 'static + Debug + PartialEq + Copy>(v: Vec<T>) -> Point<T> {
     Point::new(v[0], v[1], v[2])
@@ -71,6 +73,53 @@ impl TriMeshWrapper {
 
     pub fn contains(&self, _py: Python, point: Vec<Precision>) -> bool {
         mesh_contains_point(&self.mesh, &vec_to_point(point), &self.ray_directions)
+    }
+
+    pub fn distance_many(
+        &self,
+        py: Python,
+        points: Vec<Vec<Precision>>,
+        signed: bool,
+    ) -> Vec<Precision> {
+        let rays;
+        if signed {
+            rays = Some(&self.ray_directions[..]);
+        } else {
+            rays = None;
+        }
+        py.allow_threads(|| {
+            points
+                .into_iter()
+                .map(|v| dist_from_mesh(&self.mesh, &vec_to_point(v), rays))
+                .collect()
+        })
+    }
+
+    pub fn distance_many_threaded(
+        &self,
+        py: Python,
+        points: Vec<Vec<Precision>>,
+        signed: bool,
+        threads: usize,
+    ) -> Vec<Precision> {
+        let rays;
+        if signed {
+            rays = Some(&self.ray_directions[..]);
+        } else {
+            rays = None;
+        }
+        py.allow_threads(|| {
+            let pool = rayon::ThreadPoolBuilder::new()
+                .num_threads(threads)
+                .build()
+                .unwrap();
+            pool.install(|| {
+                points
+                    .into_par_iter()
+                    .map(|v| dist_from_mesh(&self.mesh, &vec_to_point(v), rays))
+                    .collect()
+            })
+        })
     }
 
     pub fn contains_many(&self, py: Python, points: Vec<Vec<Precision>>) -> Vec<bool> {
