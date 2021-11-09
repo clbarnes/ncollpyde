@@ -94,16 +94,9 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: '3.9'
-      - if: "!startsWith(matrix.os, 'macos')"
-        uses: messense/maturin-action@v1
+      - uses: messense/maturin-action@v1
         with:
           manylinux: auto
           command: publish
-          args: -u __token__ -p ${{ secrets.MATURIN_PASSWORD }} --skip-existing
-        name: Deploy wheels
-      - if: startsWith(matrix.os, 'macos')
-        uses: messense/maturin-action@v1
-        with:
-          command: publish
           args: -u __token__ -p ${{ secrets.MATURIN_PASSWORD }} --skip-existing --universal2
-        name: Deploy Universal2 wheels for MacOS
+        name: Deploy wheels
