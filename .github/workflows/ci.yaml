@@ -96,8 +96,7 @@ jobs:
           python-version: '3.9'
       - uses: messense/maturin-action@v1
         with:
-          maturin-version: v0.11.5
           manylinux: auto
           command: publish
-          args: -u __token__ -p ${{ secrets.MATURIN_PASSWORD }} --skip-existing
+          args: -u __token__ -p ${{ secrets.MATURIN_PASSWORD }} --skip-existing --universal2
         name: Deploy wheels
