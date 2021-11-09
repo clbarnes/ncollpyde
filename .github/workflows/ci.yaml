@@ -71,6 +71,7 @@ jobs:
         name: Install dependencies
       - run: |
           mkdir -p $TGT_DIR
+          rm $TGT_DIR/*.whl
           maturin build --release --interpreter python --out $TGT_DIR
           pip install $TGT_DIR/*.whl
         name: Install package
