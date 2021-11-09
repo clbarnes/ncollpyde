@@ -98,8 +98,7 @@ and an array of triangles as indices into the vertex array.
         [10.08592464, -2.99951118],
     )
 
-
-Note that v0.11 was the last to support ``meshio < 4.0``.
+See the API docs for more advanced usage.
 
 Known issues
 ------------
@@ -111,6 +110,8 @@ Known issues
    * Also affects ``is_backface`` result for ray intersection checks
 * manylinux-compatible wheels are built on CI but not necessarily in your local environment. Always allow CI to deploy the wheels.
 * If you are installing from a source distribution rather than a wheel, you need a compatible `rust toolchain <https://www.rust-lang.org/tools/install>`_
+
+ncollpyde v0.11 was the last to support ``meshio < 4.0``.
 
 Acknowledgements
 ----------------
