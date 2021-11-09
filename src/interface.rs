@@ -233,12 +233,14 @@ impl TriMeshWrapper {
 pub fn ncollpyde(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<TriMeshWrapper>()?;
 
-    #[pyfn(m, "_precision")]
+    #[pyfn(m)]
+    #[pyo3(name = "_precision")]
     pub fn precision_py(_py: Python) -> &'static str {
         PRECISION
     }
 
-    #[pyfn(m, "_version")]
+    #[pyfn(m)]
+    #[pyo3(name = "_version")]
     pub fn version_py(_py: Python) -> &'static str {
         env!("CARGO_PKG_VERSION")
     }

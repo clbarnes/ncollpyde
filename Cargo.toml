@@ -23,7 +23,7 @@ classifier = [
 provides-extra = ["validate"]
 
 [dependencies]
-pyo3 = { version = "0.13.2", features = ["extension-module", "abi3-py36"] }
+pyo3 = { version = "0.15.0", features = ["extension-module", "abi3-py36"] }
 ncollide3d = "0.30.0"
 rayon = "1.5.0"
 rand = "0.8.3"
