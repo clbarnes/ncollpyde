@@ -18,8 +18,8 @@ ncollpyde
     :target: https://github.com/ambv/black
 
 
-
-A python wrapper around a subset of the ncollide rust library
+A python library for spatial queries of points and line segments with meshes.
+ncollpyde wraps around a subset of the parry rust library (formerly its predecessor ncollide).
 
 
 * Free software: MIT License

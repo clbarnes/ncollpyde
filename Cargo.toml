@@ -24,7 +24,7 @@ provides-extra = ["validate"]
 
 [dependencies]
 pyo3 = { version = "0.15.0", features = ["extension-module", "abi3-py36"] }
-ncollide3d = "0.30.0"
+parry3d-f64 = "0.7"
 rayon = "1.5.0"
 rand = "0.8.3"
 rand_pcg = "0.3.0"
