@@ -302,7 +302,6 @@ mod tests {
 
     #[test]
     fn distance_unsigned() {
-        let rays = axis_rays();
         let cube = cube();
         assert_dist(&cube, &Point::new(1.0, 1.0, 1.0), None, 0.0);
         assert_dist(&cube, &Point::new(0.5, 0.5, 0.5), None, 0.5);

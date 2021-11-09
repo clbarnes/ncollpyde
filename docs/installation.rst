@@ -16,6 +16,11 @@ To install ncollpyde, run this command in your terminal:
 
 This is the preferred method to install ncollpyde, as it will always install the most recent stable release.
 
+Many platforms are supported with pre-compiled wheels.
+If your platform does not have a wheel available,
+the package will be built from the source distribution,
+for which you will need a compatible `rust toolchain <https://www.rust-lang.org/tools/install>`_.
+
 If you don't have `pip`_ installed, this `Python installation guide`_ can guide
 you through the process.
 
@@ -44,7 +49,7 @@ Once you have a copy of the source, you can install it with:
 
 .. code-block:: console
 
-    $ python setup.py install
+    $ pip install path/to/ncollpyde
 
 
 .. _Github repo: https://github.com/clbarnes/ncollpyde

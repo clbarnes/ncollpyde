@@ -7,10 +7,8 @@ Welcome to ncollpyde's documentation!
 
    readme
    installation
-   usage
-   modules
+   api
    contributing
-   history
 
 Indices and tables
 ==================

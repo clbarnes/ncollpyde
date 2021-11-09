@@ -38,43 +38,67 @@ Features
 
 * Checking whether points are inside a volume defined by a triangular mesh
 * Checking the intersection of line segments with the mesh
+* Get the (signed) distance from points to the boundary of a mesh
 
 Usage
 -----
+
+This library implements most of its functionality through the ``Volume`` class,
+instantiated from an array of vertices,
+and an array of triangles as indices into the vertex array.
 
 .. code-block:: python
 
     # get an array of vertices and triangles which refer to those points
     import meshio
-    mesh = meshio.read("tests/teapot.stl")
-    vertices = mesh.points
-    triangles = mesh.cells_dict["triangle"]
+    mesh = meshio.read("meshes/teapot.stl")
 
     # use this library
     from ncollpyde import Volume
 
-    volume = Volume(vertices, triangles)
+    volume = Volume(mesh.points, mesh.cells_dict["triangle"])
 
-Containment checks:
+    # or, for convenience
+    volume = Volume.from_meshio(mesh)
 
-.. code-block:: python
+    # containment checks: singular and multiple
+    assert [-2.30, -4.15,  1.90] in volume
+    assert np.array_equal(
+        volume.contains(
+            [
+                [-2.30, -4.15, 1.90],
+                [-0.35, -0.51, 7.61],
+            ]
+        ),
+        [True, False]
+    )
 
-    # individual points (as 3-length array-likes) can be checked with `in`
-    assert [-2.3051376, -4.1556454,  1.9047838] in volume
-    assert [-0.35222054, -0.513299, 7.6191354] not in volume
+    # line segment intersection
+    seg_idxs, intersections, is_backface = volume.intersections(
+        [[-10, -10, -10], [0, 0, 3], [10, 10, 10]],
+        [[0, 0, 3], [10, 10, 10], [20, 20, 20]],
+    )
+    assert np.array_equal(seg_idxs, [0, 1])  # idx 2 does not intersect
+    assert np.array_equal(seg_idxs, [0, 1])
+    assert np.allclose(
+        intersections,
+        [
+            [-2.23347309, -2.23347309, 0.09648498],
+            [ 3.36591285, 3.36591285, 5.356139],
+        ],
+    )
+    assert np.array_equal(
+        is_backface,
+        [False, True],
+    )
 
-    # many points (as an Nx3 array-like) can be checked with the `contains` method
-    bools = volume.contains(np.array([
-        [-2.3051376, -4.1556454,  1.9047838],
-        [-0.35222054, -0.513299, 7.6191354],
-    ]))
-    assert np.array_equal(bools, [True, False])
+    # distance from boundary (negative means internal)
+    assert np.array_equal(
+        volume.distance([[10, 10, 10], [0, 0, 3]]),
+        [10.08592464, -2.99951118],
+    )
 
-    # checks can be parallelised
-    volume.contains(np.random.random((1000, 3)), threads=4)
-
-
-Note that v0.11 was the last to support ``meshio < 4.0``.
+See the API docs for more advanced usage.
 
 Known issues
 ------------
@@ -86,3 +110,18 @@ Known issues
    * Also affects ``is_backface`` result for ray intersection checks
 * manylinux-compatible wheels are built on CI but not necessarily in your local environment. Always allow CI to deploy the wheels.
 * If you are installing from a source distribution rather than a wheel, you need a compatible `rust toolchain <https://www.rust-lang.org/tools/install>`_
+
+ncollpyde v0.11 was the last to support ``meshio < 4.0``.
+
+Acknowledgements
+----------------
+
+Thanks to top users
+`Philipp Schlegel <https://github.com/schlegelp/>`_ (check out `navis <https://github.com/navis-org/navis>`_!)
+and `Nik Drummond <https://github.com/nikdrummond>`_
+for their help in debugging and expanding ``ncollpyde`` 's functionality.
+
+Thanks also to ``pyo3``/ ``maturin`` developers
+`@konstin <https://github.com/konstin>`_
+and `@messense <https://github.com/messense/>`_
+for taking an interest in the project and helping along the way.
