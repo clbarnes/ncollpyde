@@ -1,10 +1,8 @@
 use std::fmt::Debug;
 use std::iter::repeat_with;
 
-use ncollide3d::bounding_volume::{BoundingSphere, HasBoundingVolume};
-use ncollide3d::math::{Point, Vector};
-use ncollide3d::na::Isometry3;
-use ncollide3d::shape::{TriMesh, TriMeshFace};
+use parry3d_f64::math::{Point, Vector};
+use parry3d_f64::shape::TriMesh;
 use pyo3::prelude::*;
 use rand::SeedableRng;
 use rand_pcg::Pcg64Mcg;
@@ -26,14 +24,14 @@ fn vector_to_vec<T: 'static + Debug + PartialEq + Copy>(v: &Vector<T>) -> Vec<T>
     vec![v[0], v[1], v[2]]
 }
 
-fn face_to_vec(f: &TriMeshFace<Precision>) -> Vec<usize> {
-    f.indices.iter().cloned().collect()
-}
+// fn face_to_vec(f: &TriMeshFace<Precision>) -> Vec<usize> {
+//     f.indices.iter().cloned().collect()
+// }
 
 #[cfg(not(test))]
 #[pyclass]
 pub struct TriMeshWrapper {
-    mesh: TriMesh<Precision>,
+    mesh: TriMesh,
     ray_directions: Vec<Vector<Precision>>,
 }
 
@@ -43,16 +41,16 @@ impl TriMeshWrapper {
     #[new]
     pub fn __new__(
         points: Vec<Vec<Precision>>,
-        indices: Vec<Vec<usize>>,
+        indices: Vec<Vec<u32>>,
         n_rays: usize,
         ray_seed: u64,
     ) -> Self {
         let points2 = points.into_iter().map(vec_to_point).collect();
-        let indices2 = indices.into_iter().map(vec_to_point).collect();
-        let mesh = TriMesh::new(points2, indices2, None);
+        let indices2 = indices.into_iter().map(|v| [v[0], v[1], v[2]]).collect();
+        let mesh = TriMesh::new(points2, indices2);
 
         if n_rays > 0 {
-            let bsphere: BoundingSphere<Precision> = mesh.bounding_volume(&Isometry3::identity());
+            let bsphere = mesh.local_bounding_sphere();
             let len = bsphere.radius() * 2.0;
 
             let mut rng = Pcg64Mcg::seed_from_u64(ray_seed);
@@ -154,11 +152,15 @@ impl TriMeshWrapper {
     }
 
     pub fn points(&self, _py: Python) -> Vec<Vec<Precision>> {
-        self.mesh.points().iter().map(point_to_vec).collect()
+        self.mesh.vertices().iter().map(point_to_vec).collect()
     }
 
     pub fn faces(&self, _py: Python) -> Vec<Vec<usize>> {
-        self.mesh.faces().iter().map(face_to_vec).collect()
+        self.mesh
+            .indices()
+            .iter()
+            .map(|arr| vec![arr[0] as usize, arr[1] as usize, arr[2] as usize])
+            .collect()
     }
 
     pub fn rays(&self, _py: Python) -> Vec<Vec<Precision>> {
@@ -166,7 +168,7 @@ impl TriMeshWrapper {
     }
 
     pub fn aabb(&self, _py: Python) -> (Vec<Precision>, Vec<Precision>) {
-        let aabb = self.mesh.aabb();
+        let aabb = self.mesh.local_aabb();
         (point_to_vec(&aabb.mins), point_to_vec(&aabb.maxs))
     }
 

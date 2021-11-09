@@ -1,7 +1,6 @@
-use ncollide3d::math::{Isometry, Point, Vector};
-use ncollide3d::na::RealField;
-use ncollide3d::query::{PointQuery, Ray, RayCast};
-use ncollide3d::shape::TriMesh;
+use parry3d_f64::math::{Isometry, Point, Vector};
+use parry3d_f64::query::{PointQuery, Ray, RayCast};
+use parry3d_f64::shape::TriMesh;
 use rand::Rng;
 
 pub type Precision = f64;
@@ -17,16 +16,14 @@ pub fn random_dir<R: Rng>(rng: &mut R, length: Precision) -> Vector<Precision> {
     unscaled.normalize() * length
 }
 
-pub fn mesh_contains_point_ray<T: RealField>(
-    mesh: &TriMesh<T>,
-    point: &Point<T>,
-    ray_direction: &Vector<T>,
+pub fn mesh_contains_point_ray(
+    mesh: &TriMesh,
+    point: &Point<f64>,
+    ray_direction: &Vector<f64>,
 ) -> bool {
-    let identity = Isometry::identity();
-    let intersection_opt = mesh.toi_and_normal_with_ray(
-        &identity,
+    let intersection_opt = mesh.cast_local_ray_and_get_normal(
         &Ray::new(*point, *ray_direction),
-        T::one(),
+        1.0,
         false, // unused
     );
 
@@ -37,12 +34,12 @@ pub fn mesh_contains_point_ray<T: RealField>(
     }
 }
 
-pub fn mesh_contains_point<T: RealField>(
-    mesh: &TriMesh<T>,
-    point: &Point<T>,
-    ray_directions: &[Vector<T>],
+pub fn mesh_contains_point(
+    mesh: &TriMesh,
+    point: &Point<f64>,
+    ray_directions: &[Vector<f64>],
 ) -> bool {
-    if !mesh.aabb().contains_local_point(point) {
+    if !mesh.local_aabb().contains_local_point(point) {
         return false;
     }
 
@@ -60,26 +57,19 @@ pub fn mesh_contains_point<T: RealField>(
     }
 }
 
-pub fn points_cross_mesh<T: RealField>(
-    mesh: &TriMesh<T>,
-    src_point: &Point<T>,
-    tgt_point: &Point<T>,
-) -> Option<(Point<T>, bool)> {
+pub fn points_cross_mesh(
+    mesh: &TriMesh,
+    src_point: &Point<f64>,
+    tgt_point: &Point<f64>,
+) -> Option<(Point<f64>, bool)> {
     let ray = Ray::new(*src_point, tgt_point - src_point);
-    mesh.toi_and_normal_with_ray(
-        &Isometry::identity(),
-        &ray,
-        T::one(),
-        false, // unused
+    mesh.cast_local_ray_and_get_normal(
+        &ray, 1.0, false, // unused
     )
     .map(|i| (ray.point_at(i.toi), mesh.is_backface(i.feature)))
 }
 
-pub fn dist_from_mesh<T: RealField>(
-    mesh: &TriMesh<T>,
-    point: &Point<T>,
-    rays: Option<&[Vector<T>]>,
-) -> T {
+pub fn dist_from_mesh(mesh: &TriMesh, point: &Point<f64>, rays: Option<&[Vector<f64>]>) -> f64 {
     let mut dist = mesh.distance_to_point(&Isometry::identity(), point, true);
     if let Some(r) = rays {
         if mesh_contains_point(mesh, point, r) {
@@ -91,7 +81,6 @@ pub fn dist_from_mesh<T: RealField>(
 
 #[cfg(test)]
 mod tests {
-    use ncollide3d::na::Point3;
     use std::fs::OpenOptions;
     use std::path::PathBuf;
     use stl_io::read_stl;
@@ -100,7 +89,7 @@ mod tests {
 
     const EPSILON: Precision = 0.001;
 
-    fn read_mesh(name: &'static str) -> TriMesh<Precision> {
+    fn read_mesh(name: &'static str) -> TriMesh {
         let mut stl_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .canonicalize()
             .expect("couldn't resolve");
@@ -123,13 +112,18 @@ mod tests {
             io_obj
                 .faces
                 .iter()
-                .map(|t| Point3::new(t.vertices[0], t.vertices[1], t.vertices[2]))
+                .map(|t| {
+                    [
+                        t.vertices[0] as u32,
+                        t.vertices[1] as u32,
+                        t.vertices[2] as u32,
+                    ]
+                })
                 .collect(),
-            None,
         )
     }
 
-    fn cube() -> TriMesh<Precision> {
+    fn cube() -> TriMesh {
         read_mesh("cube.stl")
     }
 
@@ -281,7 +275,7 @@ mod tests {
     }
 
     fn assert_dist(
-        mesh: &TriMesh<Precision>,
+        mesh: &TriMesh,
         point: &Point<Precision>,
         rays: Option<&[Vector<Precision>]>,
         expected: Precision,
