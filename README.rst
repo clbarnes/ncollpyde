@@ -111,3 +111,16 @@ Known issues
    * Also affects ``is_backface`` result for ray intersection checks
 * manylinux-compatible wheels are built on CI but not necessarily in your local environment. Always allow CI to deploy the wheels.
 * If you are installing from a source distribution rather than a wheel, you need a compatible `rust toolchain <https://www.rust-lang.org/tools/install>`_
+
+Acknowledgements
+----------------
+
+Thanks to top users
+`Philipp Schlegel <https://github.com/schlegelp/>`_ (check out `navis <https://github.com/navis-org/navis>`_!)
+and `Nik Drummond <https://github.com/nikdrummond>`_
+for their help in debugging and expanding ``ncollpyde`` 's functionality.
+
+Thanks also to ``pyo3``/ ``maturin`` developers
+`@konstin <https://github.com/konstin>`_
+and `@messense <https://github.com/messense/>`_
+for taking an interest in the project and helping along the way.
