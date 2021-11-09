@@ -156,7 +156,11 @@ impl TriMeshWrapper {
     }
 
     pub fn faces(&self, _py: Python) -> Vec<Vec<usize>> {
-        self.mesh.indices().iter().map(|arr| vec![arr[0] as usize, arr[1] as usize, arr[2] as usize]).collect()
+        self.mesh
+            .indices()
+            .iter()
+            .map(|arr| vec![arr[0] as usize, arr[1] as usize, arr[2] as usize])
+            .collect()
     }
 
     pub fn rays(&self, _py: Python) -> Vec<Vec<Precision>> {

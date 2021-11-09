@@ -64,18 +64,12 @@ pub fn points_cross_mesh(
 ) -> Option<(Point<f64>, bool)> {
     let ray = Ray::new(*src_point, tgt_point - src_point);
     mesh.cast_local_ray_and_get_normal(
-        &ray,
-        1.0,
-        false, // unused
+        &ray, 1.0, false, // unused
     )
     .map(|i| (ray.point_at(i.toi), mesh.is_backface(i.feature)))
 }
 
-pub fn dist_from_mesh(
-    mesh: &TriMesh,
-    point: &Point<f64>,
-    rays: Option<&[Vector<f64>]>,
-) -> f64 {
+pub fn dist_from_mesh(mesh: &TriMesh, point: &Point<f64>, rays: Option<&[Vector<f64>]>) -> f64 {
     let mut dist = mesh.distance_to_point(&Isometry::identity(), point, true);
     if let Some(r) = rays {
         if mesh_contains_point(mesh, point, r) {
@@ -118,7 +112,13 @@ mod tests {
             io_obj
                 .faces
                 .iter()
-                .map(|t| [t.vertices[0] as u32, t.vertices[1] as u32, t.vertices[2] as u32])
+                .map(|t| {
+                    [
+                        t.vertices[0] as u32,
+                        t.vertices[1] as u32,
+                        t.vertices[2] as u32,
+                    ]
+                })
                 .collect(),
         )
     }
