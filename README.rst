@@ -110,6 +110,7 @@ Known issues
    * Also affects ``is_backface`` result for ray intersection checks
 * manylinux-compatible wheels are built on CI but not necessarily in your local environment. Always allow CI to deploy the wheels.
 * If you are installing from a source distribution rather than a wheel, you need a compatible `rust toolchain <https://www.rust-lang.org/tools/install>`_
+* Meshes with >= ~4.3bn vertices are not supported, as the underlying library uses u32 to address them. This is probably not a problem at time of writing; such a mesh would take up hundreds of GB of RAM to operate on.
 
 ncollpyde v0.11 was the last to support ``meshio < 4.0``.
 

@@ -223,7 +223,7 @@ def test_ncollpyde_contains(mesh, n_rays, sample_points, expected, benchmark):
     ncollpyde_volume.threads = 0
     actual = benchmark(ncollpyde_volume.contains, sample_points)
     if n_rays:
-        check_internals_equal(expected, actual)
+        check_internals_equal(expected, actual, 1)
 
 
 @pytest.mark.benchmark(group=CONTAINS_SERIAL)
