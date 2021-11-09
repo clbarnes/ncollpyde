@@ -32,8 +32,7 @@ wanted" is open to whoever wants to implement it.
 Implement Features
 ~~~~~~~~~~~~~~~~~~
 
-Look through the GitHub issues for features. Anything tagged with "enhancement"
-and "help wanted" is open to whoever wants to implement it.
+Look through the GitHub issues for features.
 
 Write Documentation
 ~~~~~~~~~~~~~~~~~~~
@@ -64,11 +63,12 @@ Ready to contribute? Here's how to set up `ncollpyde` for local development.
 
     $ git clone git@github.com:your_name_here/ncollpyde.git
 
-3. Install your local copy into a virtualenv. Assuming you have virtualenvwrapper installed, this is how you set up your fork for local development::
+3. Create a virtualenv, install the dependencies, and build the project. You will also need a `rust toolchain <https://www.rust-lang.org/tools/install>`_::
 
-    $ mkvirtualenv ncollpyde
     $ cd ncollpyde/
-    $ python setup.py develop
+    $ python -m venv --prompt ncollpyde env
+    $ pip install -r requirements.txt -r docs/requirements.txt
+    $ maturin develop
 
 4. Create a branch for local development::
 
@@ -76,19 +76,16 @@ Ready to contribute? Here's how to set up `ncollpyde` for local development.
 
    Now you can make your changes locally.
 
-5. When you're done making changes, check that your changes pass flake8 and the
-   tests, including testing other Python versions with tox::
+5. When you're done making changes, format your changes, then lint and test them (you may need to run ``maturin develop`` again to rebuild the rust components)::
 
-    $ flake8 ncollpyde tests
-    $ python setup.py test or py.test
-    $ tox
-
-   To get flake8 and tox, just pip install them into your virtualenv.
+    $ make fmt
+    $ make lint
+    $ make test
 
 6. Commit your changes and push your branch to GitHub::
 
     $ git add .
-    $ git commit -m "Your detailed description of your changes."
+    $ git commit
     $ git push origin name-of-your-bugfix-or-feature
 
 7. Submit a pull request through the GitHub website.
@@ -102,26 +99,20 @@ Before you submit a pull request, check that it meets these guidelines:
 2. If the pull request adds functionality, the docs should be updated. Put
    your new functionality into a function with a docstring, and add the
    feature to the list in README.rst.
-3. The pull request should work for Python 2.7, 3.4, 3.5 and 3.6, and for PyPy. Check
-   https://travis-ci.org/clbarnes/ncollpyde/pull_requests
-   and make sure that the tests pass for all supported Python versions.
+3. The pull request should work for CPython versions `supported by recent numpy releases <https://numpy.org/neps/nep-0029-deprecation_policy.html>`_
 
 Tips
 ----
 
 To run a subset of tests::
 
-    $ py.test tests.test_ncollpyde
+    $ pytest tests.test_ncollpyde
 
 Deploying
 ---------
 
 A reminder for the maintainers on how to deploy.
-Make sure all your changes are committed (including an entry in HISTORY.rst).
+Make sure all your changes are committed and passing CI.
 Then run::
 
-$ bumpversion patch # possible: major / minor / patch
-$ git push
-$ git push --tags
-
-Travis will then deploy to PyPI if tests pass.
+    $ cargo release minor  # or whatever version bump
