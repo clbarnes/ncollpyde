@@ -7,7 +7,7 @@ readme = "README.rst"
 edition = "2018"
 
 [package.metadata.maturin]
-requires-dist = ["numpy>=1.16.0", "trimesh[easy]>=3.7.7; extra == 'validate'"]
+requires-dist = ["numpy>=1.21.0", "trimesh[easy]>=3.7.7; extra == 'validate'"]
 requires-python = ">=3.6"
 classifier = [
     "Development Status :: 2 - Pre-Alpha",
@@ -28,6 +28,7 @@ parry3d-f64 = { version = "0.8", features = ["dim3", "f64", "enhanced-determinis
 rayon = "1.5"
 rand = "0.8"
 rand_pcg = "0.3"
+numpy = { version = "0.15", features = ["rayon"] }
 
 [dev-dependencies]
 stl_io = "0.6"

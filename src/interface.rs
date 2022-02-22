@@ -1,6 +1,8 @@
 use std::fmt::Debug;
 use std::iter::repeat_with;
 
+use numpy::ndarray::{Array, Zip};
+use numpy::{IntoPyArray, PyArray1, PyArray2, PyReadonlyArray2};
 use parry3d_f64::math::{Point, Vector};
 use parry3d_f64::shape::TriMesh;
 use pyo3::prelude::*;
@@ -8,9 +10,7 @@ use rand::SeedableRng;
 use rand_pcg::Pcg64Mcg;
 use rayon::prelude::*;
 
-use crate::utils::{
-    dist_from_mesh, mesh_contains_point, points_cross_mesh, random_dir, Precision,
-};
+use crate::utils::{dist_from_mesh, mesh_contains_point, points_cross_mesh, random_dir, Precision};
 
 fn vec_to_point<T: 'static + Debug + PartialEq + Copy>(v: Vec<T>) -> Point<T> {
     Point::new(v[0], v[1], v[2])
@@ -40,13 +40,23 @@ pub struct TriMeshWrapper {
 impl TriMeshWrapper {
     #[new]
     pub fn __new__(
-        points: Vec<Vec<Precision>>,
-        indices: Vec<Vec<u32>>,
+        points: PyReadonlyArray2<Precision>,
+        indices: PyReadonlyArray2<u32>,
         n_rays: usize,
         ray_seed: u64,
     ) -> Self {
-        let points2 = points.into_iter().map(vec_to_point).collect();
-        let indices2 = indices.into_iter().map(|v| [v[0], v[1], v[2]]).collect();
+        let points2 = points
+            .as_array()
+            .rows()
+            .into_iter()
+            .map(|v| Point::new(v[0], v[1], v[2]))
+            .collect();
+        let indices2 = indices
+            .as_array()
+            .rows()
+            .into_iter()
+            .map(|v| [v[0], v[1], v[2]])
+            .collect();
         let mesh = TriMesh::new(points2, indices2);
 
         if n_rays > 0 {
@@ -69,164 +79,146 @@ impl TriMeshWrapper {
         }
     }
 
-    pub fn contains(&self, _py: Python, point: Vec<Precision>) -> bool {
-        mesh_contains_point(&self.mesh, &vec_to_point(point), &self.ray_directions)
-    }
-
-    pub fn distance_many(
+    pub fn distance<'py>(
         &self,
-        py: Python,
-        points: Vec<Vec<Precision>>,
+        py: Python<'py>,
+        points: PyReadonlyArray2<Precision>,
         signed: bool,
-    ) -> Vec<Precision> {
+        parallel: bool,
+    ) -> &'py PyArray1<Precision> {
         let rays;
         if signed {
             rays = Some(&self.ray_directions[..]);
         } else {
             rays = None;
         }
-        py.allow_threads(|| {
-            points
-                .into_iter()
-                .map(|v| dist_from_mesh(&self.mesh, &vec_to_point(v), rays))
-                .collect()
-        })
-    }
-
-    pub fn distance_many_threaded(
-        &self,
-        py: Python,
-        points: Vec<Vec<Precision>>,
-        signed: bool,
-        threads: usize,
-    ) -> Vec<Precision> {
-        let rays;
-        if signed {
-            rays = Some(&self.ray_directions[..]);
+        if parallel {
+            Zip::from(points.as_array().rows())
+                .par_map_collect(|v| {
+                    dist_from_mesh(&self.mesh, &Point::new(v[0], v[1], v[2]), rays)
+                })
+                .into_pyarray(py)
         } else {
-            rays = None;
+            Zip::from(points.as_array().rows())
+                .map_collect(|v| dist_from_mesh(&self.mesh, &Point::new(v[0], v[1], v[2]), rays))
+                .into_pyarray(py)
         }
-        py.allow_threads(|| {
-            let pool = rayon::ThreadPoolBuilder::new()
-                .num_threads(threads)
-                .build()
-                .unwrap();
-            pool.install(|| {
-                points
-                    .into_par_iter()
-                    .map(|v| dist_from_mesh(&self.mesh, &vec_to_point(v), rays))
-                    .collect()
-            })
-        })
     }
 
-    pub fn contains_many(&self, py: Python, points: Vec<Vec<Precision>>) -> Vec<bool> {
-        py.allow_threads(|| {
-            points
-                .into_iter()
-                .map(|v| mesh_contains_point(&self.mesh, &vec_to_point(v), &self.ray_directions))
-                .collect()
-        })
-    }
-
-    pub fn contains_many_threaded(
+    pub fn contains<'py>(
         &self,
-        py: Python,
-        points: Vec<Vec<Precision>>,
-        threads: usize,
-    ) -> Vec<bool> {
-        py.allow_threads(|| {
-            let pool = rayon::ThreadPoolBuilder::new()
-                .num_threads(threads)
-                .build()
-                .unwrap();
-            pool.install(|| {
-                points
-                    .into_par_iter()
-                    .map(|v| {
-                        mesh_contains_point(&self.mesh, &vec_to_point(v), &self.ray_directions)
-                    })
-                    .collect()
-            })
-        })
+        py: Python<'py>,
+        points: PyReadonlyArray2<Precision>,
+        parallel: bool,
+    ) -> &'py PyArray1<bool> {
+        if parallel {
+            Zip::from(points.as_array().rows())
+                .par_map_collect(|r| {
+                    mesh_contains_point(
+                        &self.mesh,
+                        &Point::new(r[0], r[1], r[2]),
+                        &self.ray_directions,
+                    )
+                })
+                .into_pyarray(py)
+        } else {
+            Zip::from(points.as_array().rows())
+                .map_collect(|r| {
+                    mesh_contains_point(
+                        &self.mesh,
+                        &Point::new(r[0], r[1], r[2]),
+                        &self.ray_directions,
+                    )
+                })
+                .into_pyarray(py)
+        }
     }
 
-    pub fn points(&self, _py: Python) -> Vec<Vec<Precision>> {
-        self.mesh.vertices().iter().map(point_to_vec).collect()
+    pub fn points<'py>(&self, py: Python<'py>) -> &'py PyArray2<Precision> {
+        let vv: Vec<Vec<Precision>> = self.mesh.vertices().iter().map(point_to_vec).collect();
+        PyArray2::from_vec2(py, &vv).unwrap()
     }
 
-    pub fn faces(&self, _py: Python) -> Vec<Vec<usize>> {
-        self.mesh
+    pub fn faces<'py>(&self, py: Python<'py>) -> &'py PyArray2<u32> {
+        let vv: Vec<Vec<u32>> = self
+            .mesh
             .indices()
             .iter()
-            .map(|arr| vec![arr[0] as usize, arr[1] as usize, arr[2] as usize])
-            .collect()
+            .map(|arr| vec![arr[0], arr[1], arr[2]])
+            .collect();
+        PyArray2::from_vec2(py, &vv).unwrap()
     }
 
-    pub fn rays(&self, _py: Python) -> Vec<Vec<Precision>> {
-        self.ray_directions.iter().map(vector_to_vec).collect()
+    pub fn rays<'py>(&self, py: Python<'py>) -> &'py PyArray2<Precision> {
+        let vv: Vec<Vec<Precision>> = self.ray_directions.iter().map(vector_to_vec).collect();
+        PyArray2::from_vec2(py, &vv).unwrap()
     }
 
-    pub fn aabb(&self, _py: Python) -> (Vec<Precision>, Vec<Precision>) {
+    pub fn aabb<'py>(&self, py: Python<'py>) -> &'py PyArray2<Precision> {
         let aabb = self.mesh.local_aabb();
-        (point_to_vec(&aabb.mins), point_to_vec(&aabb.maxs))
+        PyArray2::from_vec2(py, &[point_to_vec(&aabb.mins), point_to_vec(&aabb.maxs)]).unwrap()
     }
 
-    pub fn intersections_many(
+    pub fn intersections_many<'py>(
         &self,
-        py: Python,
-        src_points: Vec<Vec<Precision>>,
-        tgt_points: Vec<Vec<Precision>>,
-    ) -> (Vec<usize>, Vec<Vec<Precision>>, Vec<bool>) {
-        py.allow_threads(|| {
-            let mut idxs = Vec::default();
-            let mut intersections = Vec::default();
-            let mut is_backface = Vec::default();
+        py: Python<'py>,
+        src_points: PyReadonlyArray2<Precision>,
+        tgt_points: PyReadonlyArray2<Precision>,
+    ) -> (
+        &'py PyArray1<u64>,
+        &'py PyArray2<Precision>,
+        &'py PyArray1<bool>,
+    ) {
+        let mut idxs = Vec::default();
+        let mut intersections = Vec::default();
+        let mut is_backface = Vec::default();
+        let mut count = 0;
+        for (idx, point, is_bf) in src_points
+            .as_array()
+            .rows()
+            .into_iter()
+            .zip(tgt_points.as_array().rows().into_iter())
+            .zip(0_u64..)
+            .filter_map(|((src, tgt), i)| {
+                points_cross_mesh(
+                    &self.mesh,
+                    &Point::new(src[0], src[1], src[2]),
+                    &Point::new(tgt[0], tgt[1], tgt[2]),
+                )
+                .map(|o| (i, o.0, o.1))
+            })
+        {
+            idxs.push(idx);
+            intersections.extend(point.iter().cloned());
+            is_backface.push(is_bf);
+            count += 1;
+        }
 
-            for (idx, point, is_bf) in src_points
-                .into_iter()
-                .zip(tgt_points.into_iter())
-                .enumerate()
-                .filter_map(|(i, (src, tgt))| {
-                    points_cross_mesh(&self.mesh, &vec_to_point(src), &vec_to_point(tgt))
-                        .map(|o| (i, o.0, o.1))
-                })
-            {
-                idxs.push(idx);
-                intersections.push(point_to_vec(&point));
-                is_backface.push(is_bf);
-            }
-
-            (idxs, intersections, is_backface)
-        })
+        (
+            PyArray1::from_vec(py, idxs),
+            Array::from_shape_vec((count, 3), intersections)
+                .unwrap()
+                .into_pyarray(py),
+            PyArray1::from_vec(py, is_backface),
+        )
     }
 
     pub fn intersections_many_threaded(
         &self,
-        py: Python,
         src_points: Vec<Vec<Precision>>,
         tgt_points: Vec<Vec<Precision>>,
-        threads: usize,
-    ) -> (Vec<usize>, Vec<Vec<Precision>>, Vec<bool>) {
-        py.allow_threads(|| {
-            let pool = rayon::ThreadPoolBuilder::new()
-                .num_threads(threads)
-                .build()
-                .unwrap();
-            pool.install(|| {
-                let (idxs, (intersections, is_backface)) = src_points
-                    .into_par_iter()
-                    .zip(tgt_points.into_par_iter())
-                    .enumerate()
-                    .filter_map(|(i, (src, tgt))| {
-                        points_cross_mesh(&self.mesh, &vec_to_point(src), &vec_to_point(tgt))
-                            .map(|o| (i, (point_to_vec(&o.0), o.1)))
-                    })
-                    .unzip();
-
-                (idxs, intersections, is_backface)
+    ) -> (Vec<u64>, Vec<Vec<Precision>>, Vec<bool>) {
+        let (idxs, (intersections, is_backface)) = src_points
+            .into_par_iter()
+            .zip(tgt_points.into_par_iter())
+            .enumerate()
+            .filter_map(|(i, (src, tgt))| {
+                points_cross_mesh(&self.mesh, &vec_to_point(src), &vec_to_point(tgt))
+                    .map(|o| (i as u64, (point_to_vec(&o.0), o.1)))
             })
-        })
+            .unzip();
+
+        (idxs, intersections, is_backface)
     }
 }
 
@@ -238,7 +230,7 @@ pub fn ncollpyde(_py: Python, m: &PyModule) -> PyResult<()> {
     #[pyfn(m)]
     #[pyo3(name = "_precision")]
     pub fn precision_py(_py: Python) -> &'static str {
-        "float32"
+        "float64"
     }
 
     #[pyfn(m)]
@@ -251,6 +243,12 @@ pub fn ncollpyde(_py: Python, m: &PyModule) -> PyResult<()> {
     #[pyo3(name = "_version")]
     pub fn version_py(_py: Python) -> &'static str {
         env!("CARGO_PKG_VERSION")
+    }
+
+    #[pyfn(m)]
+    #[pyo3(name = "n_threads")]
+    pub fn n_threads(_py: Python) -> usize {
+        rayon::current_num_threads()
     }
 
     Ok(())
