@@ -23,15 +23,15 @@ classifier = [
 provides-extra = ["validate"]
 
 [dependencies]
-pyo3 = { version = "0.15.1", features = ["extension-module", "abi3-py36"] }
+pyo3 = { version = "0.15", features = ["extension-module", "abi3-py36"] }
 parry3d-f64 = { version = "0.8", features = ["dim3", "f64", "enhanced-determinism"] }
-rayon = "1.5.0"
-rand = "0.8.3"
-rand_pcg = "0.3.0"
+rayon = "1.5"
+rand = "0.8"
+rand_pcg = "0.3"
 
 [dev-dependencies]
-stl_io = "0.6.0"
-cargo-release = "0.13.4"
+stl_io = "0.6"
+cargo-release = "0.20"
 
 [lib]
 name = "ncollpyde"
