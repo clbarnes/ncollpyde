@@ -12,7 +12,7 @@ try:
 except ImportError:
     trimesh = None
 
-from .ncollpyde import TriMeshWrapper, _precision
+from .ncollpyde import TriMeshWrapper, _precision, _index
 
 if TYPE_CHECKING:
     import meshio
@@ -26,6 +26,7 @@ DEFAULT_RAYS = 3
 DEFAULT_SEED = 1991
 
 PRECISION = np.dtype(_precision())
+INDEX = np.dtype(_index())
 
 ArrayLike1D = Union[np.ndarray, Sequence[Number]]
 ArrayLike2D = Union[np.ndarray, Sequence[Sequence[Number]]]
@@ -71,7 +72,9 @@ class Volume:
             If None, use a random seed.
         """
         vertices = np.asarray(vertices, self.dtype)
-        triangles = np.asarray(triangles, np.uint64)
+        if len(vertices) > np.iinfo(INDEX).max:
+            raise ValueError(f"Cannot represent {len(vertices)} vertices with {INDEX}")
+        triangles = np.asarray(triangles, INDEX)
         if validate:
             vertices, triangles = self._validate(vertices, triangles)
         if threads is not None:
@@ -280,7 +283,7 @@ class Volume:
             )
 
         return (
-            np.array(idxs, np.uint64),
+            np.array(idxs, INDEX),
             np.array(points, self.dtype),
             np.array(bfs, bool),
         )
@@ -327,9 +330,9 @@ class Volume:
     @property
     def faces(self) -> np.ndarray:
         """
-        Mx3 array of uint64 describing indexes into points array making up triangles
+        Mx3 array of uint32 describing indexes into points array making up triangles
         """
-        return np.array(self._impl.faces(), np.uint64)
+        return np.array(self._impl.faces(), INDEX)
 
     @property
     def extents(self) -> np.ndarray:

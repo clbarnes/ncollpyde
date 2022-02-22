@@ -9,7 +9,7 @@ use rand_pcg::Pcg64Mcg;
 use rayon::prelude::*;
 
 use crate::utils::{
-    dist_from_mesh, mesh_contains_point, points_cross_mesh, random_dir, Precision, PRECISION,
+    dist_from_mesh, mesh_contains_point, points_cross_mesh, random_dir, Precision,
 };
 
 fn vec_to_point<T: 'static + Debug + PartialEq + Copy>(v: Vec<T>) -> Point<T> {
@@ -238,7 +238,13 @@ pub fn ncollpyde(_py: Python, m: &PyModule) -> PyResult<()> {
     #[pyfn(m)]
     #[pyo3(name = "_precision")]
     pub fn precision_py(_py: Python) -> &'static str {
-        PRECISION
+        "float32"
+    }
+
+    #[pyfn(m)]
+    #[pyo3(name = "_index")]
+    pub fn index_py(_py: Python) -> &'static str {
+        "uint32"
     }
 
     #[pyfn(m)]
