@@ -96,7 +96,7 @@ class Volume:
             vert, tri = self._validate(vert, tri)
         self.threads = self._interpret_threads(threads)
         if ray_seed is None:
-            ray_seed = random.randrange(0, 2 ** 64)
+            ray_seed = random.randrange(0, 2**64)
 
         self._impl = TriMeshWrapper(vert, tri, int(n_rays), ray_seed)
 

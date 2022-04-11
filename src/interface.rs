@@ -86,12 +86,11 @@ impl TriMeshWrapper {
         signed: bool,
         parallel: bool,
     ) -> &'py PyArray1<Precision> {
-        let rays;
-        if signed {
-            rays = Some(&self.ray_directions[..]);
+        let rays = if signed {
+            Some(&self.ray_directions[..])
         } else {
-            rays = None;
-        }
+            None
+        };
         if parallel {
             Zip::from(points.as_array().rows())
                 .par_map_collect(|v| {
