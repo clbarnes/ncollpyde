@@ -670,7 +670,7 @@ dependencies = [
 
 [[package]]
 name = "ncollpyde"
-version = "0.18.0"
+version = "0.19.0"
 dependencies = [
  "cargo-release",
  "numpy",
