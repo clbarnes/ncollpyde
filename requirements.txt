@@ -23,3 +23,6 @@ flake8==4.0.1
 coverage==6.1.1
 Sphinx==4.2.0
 mypy==0.910
+
+# docs
+-r docs/requirements.txt

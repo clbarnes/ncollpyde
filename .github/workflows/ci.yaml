@@ -82,7 +82,7 @@ jobs:
   deploy:
     strategy:
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-18.04]
+        os: [macos-latest, windows-latest, ubuntu-20.04]
     needs: [lint-rust, lint-python, test-rust, test-python]
     runs-on: ${{ matrix.os }}
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/v')
