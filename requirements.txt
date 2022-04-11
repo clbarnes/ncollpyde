@@ -17,7 +17,7 @@ pytest-benchmark==3.4.1
 # develop
 isort==5.10.1
 pip
-black==21.9b0
+black==22.3.0
 watchdog==2.1.6
 flake8==4.0.1
 coverage==6.1.1
