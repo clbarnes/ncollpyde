@@ -34,7 +34,7 @@ def test_corner(mesh):
     assert mesh.points[0] in vol
 
 
-@pytest.mark.parametrize("threads", [None, 0, 2])
+@pytest.mark.parametrize("threads", [None, False, True])
 def test_many(mesh, threads):
     points = []
     expected = []
@@ -217,7 +217,7 @@ def test_intersections(simple_volume, src, tgt, intersects, is_bf):
         assert is_bf is None
 
 
-@pytest.mark.parametrize("threads", [None, True, 0, 1, 2])
+@pytest.mark.parametrize("threads", [None, True, False])
 def test_intersections_threads(simple_volume, threads):
     sources = [
         [0.5, 0.5, -0.5],

@@ -1,5 +1,5 @@
 # build
-maturin==0.11.5
+maturin==0.12.9
 
 # run
 numpy==1.21.4
@@ -16,10 +16,13 @@ pytest-benchmark==3.4.1
 
 # develop
 isort==5.10.1
-pip==21.3.1
-black==21.9b0
+pip
+black==22.3.0
 watchdog==2.1.6
 flake8==4.0.1
 coverage==6.1.1
 Sphinx==4.2.0
 mypy==0.910
+
+# docs
+-r docs/requirements.txt

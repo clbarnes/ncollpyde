@@ -2,17 +2,17 @@ import logging
 import random
 import warnings
 from multiprocessing import cpu_count
-from numbers import Number
-from typing import TYPE_CHECKING, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Optional, Tuple, Union
 
 import numpy as np
+from numpy.typing import ArrayLike, NDArray
 
 try:
     import trimesh
 except ImportError:
     trimesh = None
 
-from .ncollpyde import TriMeshWrapper, _precision
+from .ncollpyde import TriMeshWrapper, _index, _precision
 
 if TYPE_CHECKING:
     import meshio
@@ -21,29 +21,48 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 N_CPUS = cpu_count()
-DEFAULT_THREADS = 0
+DEFAULT_THREADS = True
 DEFAULT_RAYS = 3
 DEFAULT_SEED = 1991
 
 PRECISION = np.dtype(_precision())
+INDEX = np.dtype(_index())
 
-ArrayLike1D = Union[np.ndarray, Sequence[Number]]
-ArrayLike2D = Union[np.ndarray, Sequence[Sequence[Number]]]
+
+def interpret_threads(threads: Optional[Union[int, bool]], default=DEFAULT_THREADS):
+    if isinstance(threads, bool):
+        return threads
+
+    if threads is None:
+        return interpret_threads(default)
+
+    threads = int(threads)
+
+    warnings.warn(
+        "ncollpyde's API has changed "
+        "and fine-grained control of threading is no longer possible; "
+        "`threads` should now be a boolean. "
+        "See https://github.com/clbarnes/ncollpyde/issues/27 for more details",
+        DeprecationWarning,
+    )
+    t = bool(threads)
+    logger.warning("Interpreting deprecated `threads=%s` as %s", threads, t)
+    return t
 
 
 class Volume:
-    dtype = PRECISION
+    dtype: np.dtype = PRECISION
     """Float data type used internally"""
 
-    threads = DEFAULT_THREADS
-    """Default number of threads used"""
+    threads: bool = DEFAULT_THREADS
+    """Whether to use threading"""
 
     def __init__(
         self,
-        vertices: ArrayLike2D,
-        triangles: ArrayLike2D,
+        vertices: ArrayLike,
+        triangles: ArrayLike,
         validate=False,
-        threads=None,
+        threads: Optional[bool] = None,
         n_rays=DEFAULT_RAYS,
         ray_seed=DEFAULT_SEED,
     ):
@@ -57,8 +76,7 @@ class Volume:
             If trimesh is installed, the mesh is checked for watertightness and correct
             winding, and repairs made if possible.
             Otherwise, only very basic checks are made.
-        :param threads: optional number or True, sets default threading for containment
-            checks with this instance. Can also be set on the class.
+        :param threads: optional bool, whether to parallelise queries.
         :param n_rays: int (default {DEFAULT_RAYS}), rays used to check containment.
             The underlying library sometimes reports false positives:
             casting multiple rays drastically reduces the chances of this.
@@ -70,20 +88,21 @@ class Volume:
         :param ray_seed: int >=0 (default {DEFAULT_SEED}), used for generating rays.
             If None, use a random seed.
         """
-        vertices = np.asarray(vertices, self.dtype)
-        triangles = np.asarray(triangles, np.uint64)
+        vert = np.asarray(vertices, self.dtype)
+        if len(vert) > np.iinfo(INDEX).max:
+            raise ValueError(f"Cannot represent {len(vert)} vertices with {INDEX}")
+        tri = np.asarray(triangles, INDEX)
         if validate:
-            vertices, triangles = self._validate(vertices, triangles)
-        if threads is not None:
-            self.threads = threads
+            vert, tri = self._validate(vert, tri)
+        self.threads = self._interpret_threads(threads)
         if ray_seed is None:
-            ray_seed = random.randrange(0, 2 ** 64)
+            ray_seed = random.randrange(0, 2**64)
 
-        self._impl = TriMeshWrapper(
-            vertices.tolist(), triangles.tolist(), int(n_rays), ray_seed
-        )
+        self._impl = TriMeshWrapper(vert, tri, int(n_rays), ray_seed)
 
-    def _validate(self, vertices: np.ndarray, triangles: np.ndarray):
+    def _validate(
+        self, vertices: np.ndarray, triangles: np.ndarray
+    ) -> Tuple[NDArray[np.float64], NDArray[np.uint32]]:
         if trimesh:
             tm = trimesh.Trimesh(vertices, triangles, validate=True)
             if not tm.is_volume:
@@ -97,7 +116,7 @@ class Volume:
                         "and could not be fixed"
                     )
 
-            return tm.vertices, tm.faces
+            return tm.vertices.astype(self.dtype), tm.faces.astype(np.uint32)
 
         else:
             warnings.warn("trimesh not installed; full validation not possible")
@@ -113,44 +132,18 @@ class Volume:
 
             return vertices, triangles
 
-    def __contains__(self, item: ArrayLike1D) -> bool:
-        """Check whether a single point is in the volume.
+    def __contains__(self, item: ArrayLike) -> bool:
+        """Check whether a single point is in the volume."""
+        return self.contains(np.asarray([item]), False)[0]
 
-        :param item:
-        :return:
-        """
-        item = np.asarray(item, self.dtype)
-        if item.shape != (3,):
-            raise ValueError("Item is not a 3-length array-like")
-        return self._impl.contains(item.tolist())
-
-    def _threadcount(self, threads):
-        """
-        If ``threads`` is ``None``, the instance's ``threads`` attribute (default 0)
-        is used.
-        If ``threads`` is ``True``, ``threads`` is set to the number of CPUs.
-        If ``threads`` is 0, the query will be done in serial (but the GIL will be
-        released)
-        If ``threads`` is something else (a number), the query will be parallelised
-        over that number of threads.
-
-        :return: int, number of threads to use (0 for serial)
-        """
-        if threads is None:
-            threads = self.threads
-
-        if not threads:
-            return 0
-        elif threads is True:
-            return N_CPUS
-        else:
-            return threads
+    def _interpret_threads(self, threads: Optional[Union[int, bool]]) -> bool:
+        return interpret_threads(threads, self.threads)
 
     def distance(
         self,
-        coords: ArrayLike2D,
+        coords: ArrayLike,
         signed: bool = True,
-        threads: Optional[Union[int, bool]] = None,
+        threads: Optional[bool] = None,
     ) -> np.ndarray:
         """Check the distance from the volume to multiple points (as a Px3 array-like).
 
@@ -165,64 +158,39 @@ class Volume:
             Whether distances to points inside the volume
             should be reported as negative.
         :param threads: None,
-            If ``threads`` is ``None``, the instance's ``threads`` attribute (default 0)
-            is used.
-            If ``threads`` is ``True``, ``threads`` is set to the number of CPUs.
-            If ``threads`` is 0, the query will be done in serial (but the GIL will be
-            released)
-            If ``threads`` is something else (a number), the query will be parallelised
-            over that number of threads.
+            Whether to parallelise the queries. If ``None`` (default),
+            refer to the instance's ``threads`` attribute.
         :return: np.ndarray of float, the distance from the volume to each given point
         """
         coords = np.asarray(coords, self.dtype)
         if coords.shape[1:] != (3,):
             raise ValueError("Coords is not a Nx3 array-like")
 
-        coords_list = coords.tolist()
-        n_threads = self._threadcount(threads)
-        if n_threads == 0:
-            out = self._impl.distance_many(coords_list, signed)
-        else:
-            out = self._impl.distance_many_threaded(coords_list, signed, n_threads)
-
-        return np.asarray(out, dtype=self.dtype)
+        return self._impl.distance(coords, signed, self._interpret_threads(threads))
 
     def contains(
-        self, coords: ArrayLike2D, threads: Optional[Union[int, bool]] = None
-    ) -> np.ndarray:
+        self, coords: ArrayLike, threads: Optional[bool] = None
+    ) -> NDArray[np.bool_]:
         """Check whether multiple points (as a Px3 array-like) are in the volume.
 
         :param coords:
         :param threads: None,
-            If ``threads`` is ``None``, the instance's ``threads`` attribute (default 0)
-            is used.
-            If ``threads`` is ``True``, ``threads`` is set to the number of CPUs.
-            If ``threads`` is 0, the query will be done in serial (but the GIL will be
-            released)
-            If ``threads`` is something else (a number), the query will be parallelised
-            over that number of threads.
+            Whether to parallelise the queries. If ``None`` (default),
+            refer to the instance's ``threads`` attribute.
         :return: np.ndarray of bools, whether each point is inside the volume
         """
         coords = np.asarray(coords, self.dtype)
         if coords.shape[1:] != (3,):
             raise ValueError("Coords is not a Nx3 array-like")
 
-        coords_list = coords.tolist()
-
-        n_threads = self._threadcount(threads)
-        if n_threads == 0:
-            out = self._impl.contains_many(coords_list)
-        else:
-            out = self._impl.contains_many_threaded(coords_list, n_threads)
-
-        return np.array(out, dtype=bool)
+        return self._impl.contains(coords, self._interpret_threads(threads))
 
     def intersections(
         self,
-        src_points: ArrayLike2D,
-        tgt_points: ArrayLike2D,
-        threads: Optional[Union[int, bool]] = None,
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        src_points: ArrayLike,
+        tgt_points: ArrayLike,
+        threads: Optional[bool] = None,
+    ) -> Tuple[NDArray[np.uint64], NDArray[np.float64], NDArray[np.bool_]]:
         """Get intersections between line segments and volume.
 
         Line segments are defined by their start (source) and end (target) points.
@@ -240,19 +208,16 @@ class Volume:
 
         N.B. the inside face check will report True
         for cases where a line touches ("skims") an external edge; see
-        https://github.com/dimforge/ncollide/issues/335
-        .
+        https://github.com/dimforge/ncollide/issues/335 .
+
+        N.B. threads=True here uses a slightly different implementation,
+        so you may not see the performance increase as with other methods.
 
         :param src_points: Nx3 array-like
         :param tgt_points: Nx3 array-like
         :param threads: None,
-            If ``threads`` is ``None``, the instance's ``threads`` attribute (default 0)
-            is used.
-            If ``threads`` is ``True``, ``threads`` is set to the number of CPUs.
-            If ``threads`` is 0, the query will be done in serial (but the GIL will be
-            released)
-            If ``threads`` is something else (a number), the query will be parallelised
-            over that number of threads.
+            Whether to parallelise the queries. If ``None`` (default),
+            refer to the instance's ``threads`` attribute.
         :raises ValueError: Inputs have different shapes or are not Nx3
         :return: tuple of
           uint array of indices (N),
@@ -268,22 +233,17 @@ class Volume:
         if src.shape[1:] != (3,):
             raise ValueError("Points must be Nx3 array-like")
 
-        src_list = src.tolist()
-        tgt_list = tgt.tolist()
-
-        n_threads = self._threadcount(threads)
-        if n_threads == 0:
-            idxs, points, bfs = self._impl.intersections_many(src_list, tgt_list)
-        else:
+        if self._interpret_threads(threads):
             idxs, points, bfs = self._impl.intersections_many_threaded(
-                src_list, tgt_list, n_threads
+                src.tolist(), tgt.tolist()
             )
-
-        return (
-            np.array(idxs, np.uint64),
-            np.array(points, self.dtype),
-            np.array(bfs, bool),
-        )
+            return (
+                np.array(idxs, INDEX),
+                np.array(points, self.dtype),
+                np.array(bfs, bool),
+            )
+        else:
+            return self._impl.intersections_many(src, tgt)
 
     @classmethod
     def from_meshio(
@@ -318,34 +278,34 @@ class Volume:
             raise ValueError("Must have triangle cells")
 
     @property
-    def points(self) -> np.ndarray:
+    def points(self) -> NDArray[np.float64]:
         """
         Nx3 array of float describing vertices
         """
-        return np.array(self._impl.points(), self.dtype)
+        return self._impl.points()
 
     @property
-    def faces(self) -> np.ndarray:
+    def faces(self) -> NDArray[np.uint32]:
         """
-        Mx3 array of uint64 describing indexes into points array making up triangles
+        Mx3 array of uint32 describing indexes into points array making up triangles
         """
-        return np.array(self._impl.faces(), np.uint64)
+        return self._impl.faces()
 
     @property
-    def extents(self) -> np.ndarray:
+    def extents(self) -> NDArray[np.float64]:
         """Axis-aligned bounding box of the volume.
 
         :return: 2x3 numpy array of floats,
           where the first row is mins and the second row is maxes.
         """
-        return np.array(self._impl.aabb(), self.dtype)
+        return self._impl.aabb()
 
     @property
-    def rays(self) -> np.ndarray:
+    def rays(self) -> NDArray[np.float64]:
         """
         Rays used to detect containment as an ndarray of shape (n_rays, 3).
 
         These rays are in random directions (set with the ray seed on construction),
         and are the length of the diameter of the volume's bounding sphere.
         """
-        return np.array(self._impl.rays(), self.dtype)
+        return self._impl.rays()

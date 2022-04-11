@@ -191,7 +191,9 @@ def make_sample_points(
 
 @pytest.fixture
 def sample_points(mesh: meshio.Mesh):
-    return make_sample_points([mesh.points.min(axis=0), mesh.points.max(axis=0)])
+    return make_sample_points(
+        np.asarray([mesh.points.min(axis=0), mesh.points.max(axis=0)])
+    )
 
 
 def check_internals_equal(expected, actual, tolerance=0):
@@ -220,10 +222,10 @@ def test_trimesh_contains(trimesh_volume, sample_points, expected, benchmark):
 @pytest.mark.parametrize("n_rays", [0, 1, 2, 4, 8, 16])
 def test_ncollpyde_contains(mesh, n_rays, sample_points, expected, benchmark):
     ncollpyde_volume = Volume.from_meshio(mesh, n_rays=n_rays)
-    ncollpyde_volume.threads = 0
+    ncollpyde_volume.threads = False
     actual = benchmark(ncollpyde_volume.contains, sample_points)
     if n_rays:
-        check_internals_equal(expected, actual, 0)
+        check_internals_equal(expected, actual, 1)
 
 
 @pytest.mark.benchmark(group=CONTAINS_SERIAL)
@@ -239,21 +241,16 @@ def test_pyoctree_contains(
 
 
 @pytest.mark.benchmark(group=CONTAINS_PARALLEL)
-@pytest.mark.parametrize("threads", [0, 1, 2, 4, 8, 16])
+@pytest.mark.parametrize("threads", [False, True])
 def test_ncollpyde_contains_threaded(mesh, sample_points, expected, benchmark, threads):
-    if threads > CPU_COUNT:
-        pytest.skip(f"Wanted {threads} threads, only have {CPU_COUNT} CPUs")
     ncollpyde_volume = Volume.from_meshio(mesh, n_rays=3, threads=threads)
     actual = benchmark(ncollpyde_volume.contains, sample_points)
-    check_internals_equal(expected, actual, 0)
+    check_internals_equal(expected, actual, 1)
 
 
 @pytest.mark.benchmark(group=INTERSECTION_PARALLEL)
-@pytest.mark.parametrize("threads", [0, 1, 2, 4, 8, 16])
+@pytest.mark.parametrize("threads", [False, True])
 def test_ncollpyde_intersection(mesh, benchmark, threads):
-    if threads > CPU_COUNT:
-        pytest.skip(f"Wanted {threads} threads, only have {CPU_COUNT} CPUs")
-
     n_edges = 1_000
     rng = np.random.default_rng(1991)
     starts = rng.random((n_edges, 3)) * 2 - 0.5

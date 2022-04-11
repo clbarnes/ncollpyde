@@ -30,7 +30,7 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: '3.x'
-      - run: pip install $(grep -E '^(black|flake8|mypy|isort)' requirements.txt)
+      - run: pip install $(grep -E '^(black|flake8|mypy|isort|numpy)' requirements.txt)
       - run: make lint-python
 
   test-rust:
@@ -47,7 +47,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.7', '3.8', '3.9']
+        python-version: ['3.7', '3.8', '3.9', '3.10']
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
@@ -71,7 +71,7 @@ jobs:
         name: Install dependencies
       - run: |
           mkdir -p $TGT_DIR
-          rm $TGT_DIR/*.whl
+          rm -f $TGT_DIR/*.whl
           maturin build --release --interpreter python --out $TGT_DIR
           pip install $TGT_DIR/*.whl
         name: Install package
@@ -82,7 +82,7 @@ jobs:
   deploy:
     strategy:
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-18.04]
+        os: [macos-latest, windows-latest, ubuntu-20.04]
     needs: [lint-rust, lint-python, test-rust, test-python]
     runs-on: ${{ matrix.os }}
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/v')

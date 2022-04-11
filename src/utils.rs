@@ -4,7 +4,6 @@ use parry3d_f64::shape::TriMesh;
 use rand::Rng;
 
 pub type Precision = f64;
-pub const PRECISION: &str = "float64";
 
 pub fn random_dir<R: Rng>(rng: &mut R, length: Precision) -> Vector<Precision> {
     let unscaled: Vector<Precision> = [
