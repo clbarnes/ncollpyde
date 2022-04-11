@@ -225,7 +225,7 @@ def test_ncollpyde_contains(mesh, n_rays, sample_points, expected, benchmark):
     ncollpyde_volume.threads = False
     actual = benchmark(ncollpyde_volume.contains, sample_points)
     if n_rays:
-        check_internals_equal(expected, actual, 0)
+        check_internals_equal(expected, actual, 1)
 
 
 @pytest.mark.benchmark(group=CONTAINS_SERIAL)
@@ -245,7 +245,7 @@ def test_pyoctree_contains(
 def test_ncollpyde_contains_threaded(mesh, sample_points, expected, benchmark, threads):
     ncollpyde_volume = Volume.from_meshio(mesh, n_rays=3, threads=threads)
     actual = benchmark(ncollpyde_volume.contains, sample_points)
-    check_internals_equal(expected, actual, 0)
+    check_internals_equal(expected, actual, 1)
 
 
 @pytest.mark.benchmark(group=INTERSECTION_PARALLEL)
