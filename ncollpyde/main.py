@@ -39,9 +39,7 @@ def interpret_threads(threads: Optional[Union[int, bool]], default=DEFAULT_THREA
     threads = int(threads)
 
     warnings.warn(
-        "ncollpyde's API has changed "
-        "and fine-grained control of threading is no longer possible; "
-        "`threads` should now be a boolean. "
+        "ncollpyde's API has changed; `threads` should now be a boolean. "
         "See https://github.com/clbarnes/ncollpyde/issues/27 for more details",
         DeprecationWarning,
     )
@@ -96,6 +94,10 @@ class Volume:
             vert, tri = self._validate(vert, tri)
         self.threads = self._interpret_threads(threads)
         if ray_seed is None:
+            logger.warning(
+                "Using unseeded random number generator for containment-checking rays; "
+                "results may be inconsistent across repeats."
+            )
             ray_seed = random.randrange(0, 2**64)
 
         self._impl = TriMeshWrapper(vert, tri, int(n_rays), ray_seed)
@@ -252,7 +254,7 @@ class Volume:
         validate=False,
         threads=None,
         n_rays=DEFAULT_RAYS,
-        ray_seed=None,
+        ray_seed=DEFAULT_SEED,
     ) -> "Volume":
         """
         Convenience function for instantiating a Volume from a meshio Mesh.
@@ -266,16 +268,18 @@ class Volume:
         :return: Volume instance
         """
         try:
-            return cls(
-                mesh.points,
-                mesh.cells_dict["triangle"],
-                validate,
-                threads,
-                n_rays,
-                ray_seed,
-            )
+            triangles = mesh.cells_dict["triangle"]
         except KeyError:
             raise ValueError("Must have triangle cells")
+
+        return cls(
+            mesh.points,
+            triangles,
+            validate,
+            threads,
+            n_rays,
+            ray_seed,
+        )
 
     @property
     def points(self) -> NDArray[np.float64]:
