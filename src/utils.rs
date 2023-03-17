@@ -50,9 +50,11 @@ pub fn mesh_contains_point(
     if ray_directions.is_empty() {
         false
     } else {
-        ray_directions
+        let n_containments = ray_directions
             .iter()
-            .all(|v| mesh_contains_point_ray(mesh, point, v))
+            .filter(|v| mesh_contains_point_ray(mesh, point, v))
+            .count();
+        n_containments as f64 / ray_directions.len() as f64 > 0.5
     }
 }
 

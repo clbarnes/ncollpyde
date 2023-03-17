@@ -100,6 +100,17 @@ class Volume:
             )
             ray_seed = random.randrange(0, 2**64)
 
+        n_rays = max(int(n_rays), 0)
+        if n_rays < 1:
+            logger.warning(
+                "<1 ray used; points will only be considered internal "
+                "if they lie on the mesh shell"
+            )
+        if not n_rays % 2:
+            logger.warning(
+                "Even number of rays used; odd numbers are preferred to break ties"
+            )
+
         self._impl = TriMeshWrapper(vert, tri, int(n_rays), ray_seed)
 
     def _validate(
