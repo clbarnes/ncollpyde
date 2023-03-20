@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 import numpy.typing as npt
@@ -13,7 +13,12 @@ Indices = npt.NDArray[np.uint32]
 
 class TriMeshWrapper:
     def __init__(
-        self, points: Points, indices: Indices, n_rays: int, ray_seed: int
+        self,
+        points: Points,
+        indices: Indices,
+        n_rays: int,
+        ray_seed: int,
+        n_rays_inside: Optional[int],
     ): ...
     def contains(self, points: Points, parallel: bool) -> npt.NDArray[np.bool_]: ...
     def distance(

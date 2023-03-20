@@ -33,6 +33,7 @@ fn vector_to_vec<T: 'static + Debug + PartialEq + Copy>(v: &Vector<T>) -> Vec<T>
 pub struct TriMeshWrapper {
     mesh: TriMesh,
     ray_directions: Vec<Vector<Precision>>,
+    n_rays_inside: usize,
 }
 
 #[cfg(not(test))]
@@ -44,6 +45,7 @@ impl TriMeshWrapper {
         indices: PyReadonlyArray2<u32>,
         n_rays: usize,
         ray_seed: u64,
+        n_rays_inside: Option<usize>,
     ) -> Self {
         let points2 = points
             .as_array()
@@ -59,6 +61,8 @@ impl TriMeshWrapper {
             .collect();
         let mesh = TriMesh::new(points2, indices2);
 
+        let actual_n_rays_inside = n_rays_inside.unwrap_or(n_rays);
+
         if n_rays > 0 {
             let bsphere = mesh.local_bounding_sphere();
             let len = bsphere.radius() * 2.0;
@@ -70,11 +74,13 @@ impl TriMeshWrapper {
                 ray_directions: repeat_with(|| random_dir(&mut rng, len))
                     .take(n_rays)
                     .collect(),
+                n_rays_inside: actual_n_rays_inside,
             }
         } else {
             Self {
                 mesh,
                 ray_directions: Vec::default(),
+                n_rays_inside: actual_n_rays_inside,
             }
         }
     }
@@ -94,12 +100,24 @@ impl TriMeshWrapper {
         if parallel {
             Zip::from(points.as_array().rows())
                 .par_map_collect(|v| {
-                    dist_from_mesh(&self.mesh, &Point::new(v[0], v[1], v[2]), rays)
+                    dist_from_mesh(
+                        &self.mesh,
+                        &Point::new(v[0], v[1], v[2]),
+                        rays,
+                        self.n_rays_inside,
+                    )
                 })
                 .into_pyarray(py)
         } else {
             Zip::from(points.as_array().rows())
-                .map_collect(|v| dist_from_mesh(&self.mesh, &Point::new(v[0], v[1], v[2]), rays))
+                .map_collect(|v| {
+                    dist_from_mesh(
+                        &self.mesh,
+                        &Point::new(v[0], v[1], v[2]),
+                        rays,
+                        self.n_rays_inside,
+                    )
+                })
                 .into_pyarray(py)
         }
     }
@@ -117,6 +135,7 @@ impl TriMeshWrapper {
                         &self.mesh,
                         &Point::new(r[0], r[1], r[2]),
                         &self.ray_directions,
+                        self.n_rays_inside,
                     )
                 })
                 .into_pyarray(py)
@@ -127,6 +146,7 @@ impl TriMeshWrapper {
                         &self.mesh,
                         &Point::new(r[0], r[1], r[2]),
                         &self.ray_directions,
+                        self.n_rays_inside,
                     )
                 })
                 .into_pyarray(py)

@@ -111,7 +111,7 @@ class Volume:
                 "Even number of rays used; odd numbers are preferred to break ties"
             )
 
-        self._impl = TriMeshWrapper(vert, tri, int(n_rays), ray_seed)
+        self._impl = TriMeshWrapper(vert, tri, int(n_rays), ray_seed, None)
 
     def _validate(
         self, vertices: np.ndarray, triangles: np.ndarray

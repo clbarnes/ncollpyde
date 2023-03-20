@@ -5,6 +5,7 @@ use rand::Rng;
 
 pub type Precision = f64;
 
+/// Random vector with given length
 pub fn random_dir<R: Rng>(rng: &mut R, length: Precision) -> Vector<Precision> {
     let unscaled: Vector<Precision> = [
         rng.gen::<Precision>() - 0.5,
@@ -14,6 +15,61 @@ pub fn random_dir<R: Rng>(rng: &mut R, length: Precision) -> Vector<Precision> {
     .into();
     unscaled.normalize() * length
 }
+
+// /// 3 orthonormal vectors describing a random basis
+// pub fn random_basis<R: Rng>(rng: &mut R) -> Vec<Vector<Precision>> {
+//     let rand = random_dir(rng, 1.0);
+//     let rand2 = random_dir(rng, 1.0);
+//     let cross1 = rand.cross(&rand2);
+//     let cross2 = rand.cross(&cross1);
+
+//     vec![rand, cross1, cross2]
+// }
+
+// /// 6 vectors made up of a random orthonormal basis and each of those vectors * -1
+// /// If `interleave`, arranged as A,-A,B,-B,C,-C; otherwise A,B,C,-A,-B,-C.
+// pub fn random_compass<R: Rng>(rng: &mut R, interleave: bool) -> Vec<Vector<Precision>> {
+//     let pos = random_basis(rng);
+
+//     if interleave {
+//         vec![
+//             pos[0],
+//             -pos[0],
+//             pos[1],
+//             -pos[1],
+//             pos[2],
+//             -pos[2],
+//         ]
+//     } else {
+//         vec![
+//             pos[0],
+//             pos[1],
+//             pos[2],
+//             -pos[0],
+//             -pos[1],
+//             -pos[2],
+//         ]
+//     }
+// }
+
+// /// Any number of random vectors, where 0-6, 6-12, 12-18 etc. are as produced by `random_compass`.
+// pub fn random_rays<R: Rng>(rng: &mut R, n: usize, interleave: bool) -> Vec<Vector<Precision>> {
+//     let mut out = Vec::with_capacity(n);
+//     while n > 0 {
+//         let mut vecs = random_compass(rng, interleave);
+
+//         if n > vecs.len() {
+//             out.append(&mut vecs);
+//         } else {
+//             out.append(&mut vecs.drain(..n).collect())
+//         }
+//     }
+//     out
+// }
+
+// pub fn random_rays_with_length<R: Rng>(rng: &mut R, n: usize, interleave: bool, length: Precision) -> Vec<Vector<Precision>> {
+//     random_rays(rng, n, interleave).into_iter().map(|v| v * length).collect()
+// }
 
 pub fn mesh_contains_point_ray(
     mesh: &TriMesh,
@@ -37,6 +93,7 @@ pub fn mesh_contains_point(
     mesh: &TriMesh,
     point: &Point<f64>,
     ray_directions: &[Vector<f64>],
+    n_rays_inside: usize,
 ) -> bool {
     if !mesh.local_aabb().contains_local_point(point) {
         return false;
@@ -47,15 +104,40 @@ pub fn mesh_contains_point(
         return true;
     }
 
-    if ray_directions.is_empty() {
-        false
-    } else {
-        let n_containments = ray_directions
-            .iter()
-            .filter(|v| mesh_contains_point_ray(mesh, point, v))
-            .count();
-        n_containments as f64 / ray_directions.len() as f64 > 0.5
+    if n_rays_inside == 0 {
+        return true;
     }
+
+    if ray_directions.len() == 0 {
+        return false;
+    }
+
+    if n_rays_inside > ray_directions.len() {
+        return false;
+    }
+
+    // counting both hits and misses allows short-circuiting in both directions
+    let n_rays_outside = ray_directions.len() - n_rays_inside;
+    let mut in_count = 0;
+    let mut out_count = 0;
+
+    for ray in ray_directions {
+        let is_inside = mesh_contains_point_ray(mesh, point, ray);
+        if is_inside {
+            in_count += 1;
+            if in_count >= n_rays_inside {
+                return true;
+            }
+        } else {
+            out_count += 1;
+            if out_count >= n_rays_outside {
+                return false;
+            }
+        }
+    }
+
+    // probably shouldn't happen
+    false
 }
 
 pub fn points_cross_mesh(
@@ -70,10 +152,15 @@ pub fn points_cross_mesh(
     .map(|i| (ray.point_at(i.toi), mesh.is_backface(i.feature)))
 }
 
-pub fn dist_from_mesh(mesh: &TriMesh, point: &Point<f64>, rays: Option<&[Vector<f64>]>) -> f64 {
+pub fn dist_from_mesh(
+    mesh: &TriMesh,
+    point: &Point<f64>,
+    rays: Option<&[Vector<f64>]>,
+    n_rays_inside: usize,
+) -> f64 {
     let mut dist = mesh.distance_to_point(&Isometry::identity(), point, true);
     if let Some(r) = rays {
-        if mesh_contains_point(mesh, point, r) {
+        if mesh_contains_point(mesh, point, r, n_rays_inside) {
             dist = -dist;
         }
     }
@@ -281,7 +368,7 @@ mod tests {
         rays: Option<&[Vector<Precision>]>,
         expected: Precision,
     ) {
-        assert_eq!(dist_from_mesh(mesh, point, rays), expected)
+        assert_eq!(dist_from_mesh(mesh, point, rays, 2), expected)
     }
 
     #[test]
