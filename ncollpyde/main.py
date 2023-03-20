@@ -1,7 +1,6 @@
 import logging
 import random
 import warnings
-from multiprocessing import cpu_count
 from typing import TYPE_CHECKING, Optional, Tuple, Union
 
 import numpy as np

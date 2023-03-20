@@ -108,7 +108,7 @@ pub fn mesh_contains_point(
         return true;
     }
 
-    if ray_directions.len() == 0 {
+    if ray_directions.is_empty() {
         return false;
     }
 
