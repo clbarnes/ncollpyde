@@ -12,7 +12,7 @@ try:
 except ImportError:
     trimesh = None
 
-from .ncollpyde import TriMeshWrapper, _index, _precision
+from .ncollpyde import TriMeshWrapper, _index, _precision, n_threads
 
 if TYPE_CHECKING:
     import meshio
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-N_CPUS = cpu_count()
+N_THREADS = n_threads()
 DEFAULT_THREADS = True
 DEFAULT_RAYS = 3
 DEFAULT_SEED = 1991
@@ -85,6 +85,10 @@ class Volume:
                 - one ray reports that the point is external.
         :param ray_seed: int >=0 (default {DEFAULT_SEED}), used for generating rays.
             If None, use a random seed.
+        :param n_rays_inside: optional int (default None), used for ray consensus.
+            Number of rays which must hit mesh backfaces
+            for point to be considered internal.
+            If None, use n_rays.
         """
         vert = np.asarray(vertices, self.dtype)
         if len(vert) > np.iinfo(INDEX).max:

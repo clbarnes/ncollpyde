@@ -9,10 +9,9 @@ from .main import DEFAULT_RAYS  # noqa: F401
 from .main import DEFAULT_SEED  # noqa: F401
 from .main import DEFAULT_THREADS  # noqa: F401
 from .main import INDEX  # noqa: F401
-from .main import N_CPUS  # noqa: F401
+from .main import N_THREADS  # noqa: F401
 from .main import PRECISION  # noqa: F401
 from .main import Volume  # noqa: F401
-from .ncollpyde import n_threads  # noqa: F401
 from .ncollpyde import _version
 
 __version__ = _version()
