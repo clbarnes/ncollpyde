@@ -7,12 +7,6 @@ repos:
     - id: black
       language_version: python3.7
       args: ["ncollpyde", "tests"]
--   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.2.1
-    hooks:
-    - id: check-yaml
-    - id: check-added-large-files
-    - id: flake8
 -   repo: https://github.com/doublify/pre-commit-rust
     rev: master
     hooks:
