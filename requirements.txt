@@ -2,7 +2,7 @@
 maturin==0.14
 
 # run
-numpy==1.21.4
+numpy==1.22.0
 trimesh[easy]==3.9.35
 
 # test
