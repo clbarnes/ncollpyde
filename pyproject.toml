@@ -2,6 +2,11 @@
 requires = ["maturin==0.12", "numpy>=1.21"]
 build-backend = "maturin"
 
-[tool.isort]
-profile = "black"
-multi_line_output = 3
+[tool.mypy]
+ignore_missing_imports = true
+plugins = ["numpy.typing.mypy_plugin"]
+python_version = "3.8"
+
+[tool.ruff]
+extend-exclude = ["docs"]
+target-version = "py38"
