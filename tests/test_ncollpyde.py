@@ -299,7 +299,8 @@ def test_configure_threadpool_subprocess():
         "from ncollpyde import configure_threadpool; configure_threadpool(2, 'prefix')"
     )
     args = [sys.executable, "-c", cmd]
-    assert sp.call(args) == 0
+
+    sp.run(args, check=True, text=True, capture_output=True)
 
 
 def test_configure_threadpool_twice():
