@@ -3,6 +3,8 @@
 
 """Tests for `ncollpyde` package."""
 from itertools import product
+import sys
+import subprocess as sp
 
 import numpy as np
 import pytest
@@ -12,7 +14,7 @@ try:
 except ImportError:
     trimesh = None
 
-from ncollpyde import PRECISION, Volume
+from ncollpyde import PRECISION, Volume, configure_threadpool
 
 points_expected = [
     ([-2.3051376, -4.1556454, 1.9047838], True),  # internal
@@ -284,3 +286,24 @@ def test_distance_unsigned(simple_volume, point, expected, signed):
     assert np.allclose(
         simple_volume.distance([point], signed=signed), np.asarray([expected])
     )
+
+
+@pytest.mark.xfail(reason="Other tests already configure the pool")
+def test_configure_threadpool():
+    configure_threadpool(2, "prefix")
+
+
+def test_configure_threadpool_subprocess():
+    # must be run in its own interpreter so that pool is not already configured
+    cmd = (
+        "from ncollpyde import configure_threadpool; configure_threadpool(2, 'prefix')"
+    )
+    args = [sys.executable, "-c", cmd]
+    assert sp.call(args) == 0
+
+
+def test_configure_threadpool_twice():
+    # configure_threadpool(2, "prefix")
+    with pytest.raises(RuntimeError):
+        configure_threadpool(3, "prefix")
+        configure_threadpool(3, "prefix")

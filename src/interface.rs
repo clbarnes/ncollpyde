@@ -5,10 +5,11 @@ use numpy::ndarray::{Array, Zip};
 use numpy::{IntoPyArray, PyArray1, PyArray2, PyReadonlyArray2};
 use parry3d_f64::math::{Point, Vector};
 use parry3d_f64::shape::TriMesh;
+use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 use rand::SeedableRng;
 use rand_pcg::Pcg64Mcg;
-use rayon::prelude::*;
+use rayon::{prelude::*, ThreadPoolBuilder};
 
 use crate::utils::{dist_from_mesh, mesh_contains_point, points_cross_mesh, random_dir, Precision};
 
@@ -245,6 +246,25 @@ pub fn ncollpyde(_py: Python, m: &PyModule) -> PyResult<()> {
     #[pyo3(name = "n_threads")]
     pub fn n_threads(_py: Python) -> usize {
         rayon::current_num_threads()
+    }
+
+    #[pyfn(m)]
+    #[pyo3(name = "configure_threadpool")]
+    pub fn configure_threadpool(
+        _py: Python,
+        n_threads: Option<usize>,
+        name_prefix: Option<String>,
+    ) -> PyResult<()> {
+        let mut builder = ThreadPoolBuilder::new();
+        if let Some(n) = n_threads {
+            builder = builder.num_threads(n);
+        }
+        if let Some(p) = name_prefix {
+            builder = builder.thread_name(move |idx| format!("{p}{idx}"));
+        }
+        builder
+            .build_global()
+            .map_err(|e| PyRuntimeError::new_err(format!("Error building threadpool: {e}")))
     }
 
     Ok(())

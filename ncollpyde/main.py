@@ -12,7 +12,12 @@ try:
 except ImportError:
     trimesh = None
 
-from .ncollpyde import TriMeshWrapper, _index, _precision
+from .ncollpyde import (
+    TriMeshWrapper,
+    _index,
+    _precision,
+    configure_threadpool as _configure_threadpool,
+)
 
 if TYPE_CHECKING:
     import meshio
@@ -27,6 +32,32 @@ DEFAULT_SEED = 1991
 
 PRECISION = np.dtype(_precision())
 INDEX = np.dtype(_index())
+
+
+def configure_threadpool(n_threads: Optional[int], name_prefix: Optional[str]):
+    """Configure the thread pool used for parallelisation.
+
+    Must be called a maximum of once,
+    and only before the first parallelised ncollpyde query.
+    This will be used for all parallelised ncollpyde queries.
+
+    Parameters
+    ----------
+    n_threads : Optional[int]
+        Number of threads to use.
+        If None or 0, will use the default
+        (see https://docs.rs/rayon/latest/rayon/struct.ThreadPoolBuilder.html#method.num_threads).
+    name_prefix : Optional[str]
+        How to name threads created by this library.
+        Will be suffixed with the thread index.
+        If not given, will use the rayon default.
+
+    Raises
+    ------
+    RuntimeError
+        If the pool could not be built for any reason.
+    """
+    _configure_threadpool(n_threads, name_prefix)
 
 
 def interpret_threads(threads: Optional[Union[int, bool]], default=DEFAULT_THREADS):

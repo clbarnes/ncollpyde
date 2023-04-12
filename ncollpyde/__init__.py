@@ -12,6 +12,7 @@ from .main import INDEX  # noqa: F401
 from .main import N_CPUS  # noqa: F401
 from .main import PRECISION  # noqa: F401
 from .main import Volume  # noqa: F401
+from .main import configure_threadpool  # noqa: F401
 from .ncollpyde import n_threads  # noqa: F401
 from .ncollpyde import _version
 
