@@ -236,16 +236,81 @@ class Volume:
             raise ValueError("Points must be Nx3 array-like")
 
         if self._interpret_threads(threads):
-            idxs, points, bfs = self._impl.intersections_many_threaded(
-                src.tolist(), tgt.tolist()
-            )
-            return (
-                np.array(idxs, INDEX),
-                np.array(points, self.dtype),
-                np.array(bfs, bool),
-            )
+            return self._intersections_many_threaded(src, tgt)
         else:
             return self._impl.intersections_many(src, tgt)
+
+    def _intersections_many_threaded(self, src: NDArray, tgt: NDArray) -> Tuple[NDArray[np.uint64], NDArray[np.float64], NDArray[np.bool_]]:
+        idxs, points, bfs = self._impl.intersections_many_threaded(
+            src.tolist(), tgt.tolist()
+        )
+        return (
+            np.array(idxs, INDEX),
+            np.array(points, self.dtype),
+            np.array(bfs, bool),
+        )
+
+    def _project_towards(self, src: NDArray, tgt: NDArray, distance: float) -> NDArray:
+        vecs = tgt - src
+        vecs /= np.linalg.norm(vecs, axis=1)
+        vecs *= distance
+        return src + vecs
+
+    def _distance_between(self, src: NDArray, tgt: NDArray) => NDArray:
+        return np.linalg.norm(src - tgt, axis=1)
+
+    def _intersected_distance(self, src: NDArray, tgt: NDArray, threaded: bool, src_inside: Optional[NDArray], out: Optional[NDArray]) -> NDArray[np.float64]:
+        # TODO
+        if src_inside is None:
+            src_inside = self._impl.contains(src, threaded)
+        if out is None:
+            out = np.zeros(len(src), self.dtype)
+
+        if threaded:
+            idxs, points, bfs = self._intersections_many_threaded(src, tgt)
+        else:
+            idxs, points, bfs = self._impl.intersections_many(src, tgt)
+
+        is_intersecting = np.zeros(len(src), bool)
+        is_intersecting[idxs] = True
+
+        # line segments with no intersection are either 0 or the segment length,
+        # depending on whether the source is inside the mesh
+        non_intersect_inside = src_inside[~is_intersecting]
+        non_intersect_out = out[~is_intersecting]
+        non_intersect_out[non_intersect_inside] += self._distance_between(
+            src[~is_intersecting], tgt[~is_intersecting]
+        )
+
+        # line segments with intersection need to cast another ray from the intersection point
+        out[is_intersecting] += self._distance_between(src[is_intersecting], points)
+        intersect_src = src[is_intersecting]
+        epsilon = np.finfo(self.dtype).eps
+        new_src = self._project_towards(src[is_intersecting], tgt[is_intersecting], epsilon)
+        out[np.logical_and(is_intersecting, ~src_inside)] += epsilon
+
+
+
+
+
+    def intersected_distance(
+        self,
+        src_points: ArrayLike,
+        tgt_points: ArrayLike,
+        threads: Optional[bool] = None,
+    ) -> NDArray[np.float64]:
+        # note will fail if single edge
+        src = np.asarray(src_points, self.dtype)
+        tgt = np.asarray(tgt_points, self.dtype)
+
+        if src.shape != tgt.shape:
+            raise ValueError("Source and target points arrays must be the same shape")
+
+        if src.shape[1:] != (3,):
+            raise ValueError("Points must be Nx3 array-like")
+
+        threaded = self._interpret_threads(threads)
+        return self._intersected_distance(src, tgt, self._impl.contains(src, threaded), threaded)
 
     @classmethod
     def from_meshio(
