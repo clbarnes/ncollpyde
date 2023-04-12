@@ -28,14 +28,12 @@ fn vector_to_vec<T: 'static + Debug + PartialEq + Copy>(v: &Vector<T>) -> Vec<T>
 //     f.indices.iter().cloned().collect()
 // }
 
-#[cfg(not(test))]
 #[pyclass]
 pub struct TriMeshWrapper {
     mesh: TriMesh,
     ray_directions: Vec<Vector<Precision>>,
 }
 
-#[cfg(not(test))]
 #[pymethods]
 impl TriMeshWrapper {
     #[new]
@@ -221,7 +219,6 @@ impl TriMeshWrapper {
     }
 }
 
-#[cfg(not(test))]
 #[pymodule]
 pub fn ncollpyde(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<TriMeshWrapper>()?;
