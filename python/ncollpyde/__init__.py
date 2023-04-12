@@ -13,8 +13,8 @@ from .main import N_CPUS  # noqa: F401
 from .main import PRECISION  # noqa: F401
 from .main import Volume  # noqa: F401
 from .main import configure_threadpool  # noqa: F401
-from .ncollpyde import n_threads  # noqa: F401
-from .ncollpyde import _version
+from ._ncollpyde import n_threads  # noqa: F401
+from ._ncollpyde import _version
 
 __version__ = _version()
 __version_info__ = tuple(int(n) for n in __version__.split("-")[0].split("."))

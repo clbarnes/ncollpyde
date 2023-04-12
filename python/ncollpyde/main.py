@@ -12,11 +12,11 @@ try:
 except ImportError:
     trimesh = None
 
-from .ncollpyde import (
+from ._ncollpyde import (
     TriMeshWrapper,
     _index,
     _precision,
-    configure_threadpool as _configure_threadpool,
+    _configure_threadpool,
 )
 
 if TYPE_CHECKING:

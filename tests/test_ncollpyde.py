@@ -5,6 +5,7 @@
 from itertools import product
 import sys
 import subprocess as sp
+import logging
 
 import numpy as np
 import pytest
@@ -15,6 +16,8 @@ except ImportError:
     trimesh = None
 
 from ncollpyde import PRECISION, Volume, configure_threadpool
+
+logger = logging.getLogger(__name__)
 
 points_expected = [
     ([-2.3051376, -4.1556454, 1.9047838], True),  # internal
@@ -300,7 +303,10 @@ def test_configure_threadpool_subprocess():
     )
     args = [sys.executable, "-c", cmd]
 
-    sp.run(args, check=True, text=True, capture_output=True)
+    result = sp.run(args, text=True, capture_output=True)
+    logger.info(result.stdout)
+    logger.warning(result.stderr)
+    result.check_returncode()
 
 
 def test_configure_threadpool_twice():

@@ -221,6 +221,7 @@ impl TriMeshWrapper {
 }
 
 #[pymodule]
+#[pyo3(name = "_ncollpyde")]
 pub fn ncollpyde(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<TriMeshWrapper>()?;
 
@@ -249,7 +250,7 @@ pub fn ncollpyde(_py: Python, m: &PyModule) -> PyResult<()> {
     }
 
     #[pyfn(m)]
-    #[pyo3(name = "configure_threadpool")]
+    #[pyo3(name = "_configure_threadpool")]
     pub fn configure_threadpool(
         _py: Python,
         n_threads: Option<usize>,

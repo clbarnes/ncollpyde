@@ -37,6 +37,10 @@ repository = "https://github.com/clbarnes/ncollpyde/"
 requires = ["maturin==0.14", "numpy>=1.21"]
 build-backend = "maturin"
 
+[tool.maturin]
+python-source = "python"
+module-name = "ncollpyde._ncollpyde"
+
 [tool.mypy]
 ignore_missing_imports = true
 plugins = ["numpy.typing.mypy_plugin"]
