@@ -2,7 +2,7 @@ import logging
 import random
 import warnings
 from multiprocessing import cpu_count
-from typing import TYPE_CHECKING, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Optional, Tuple, Union, List
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
@@ -218,6 +218,34 @@ class Volume:
 
         return self._impl.contains(coords, self._interpret_threads(threads))
 
+    def _as_points(self, points: ArrayLike) -> NDArray:
+        p = np.asarray(points, self.dtype)
+        if p.shape[1:] != (3,):
+            raise ValueError("Points must be Nx3 array-like")
+        return p
+
+    def _validate_points(self, *points: ArrayLike) -> List[NDArray]:
+        """Ensure that arrays are equal-length sets of points."""
+        ndim = None
+        out = []
+
+        for p_raw in points:
+            p = self._as_points(p_raw)
+            nd = p.shape[1:]
+            if ndim is None:
+                ndim = nd
+            elif ndim != nd:
+                raise ValueError("Point arrays are not the same shape")
+            out.append(p)
+
+        return out
+
+    def _sdf_intersections(
+        self, points: ArrayLike, vectors: ArrayLike
+    ) -> Tuple[NDArray, NDArray]:
+        p, v = self._validate_points(points, vectors)
+        return self._impl.sdf_intersections(p, v)
+
     def intersections(
         self,
         src_points: ArrayLike,
@@ -257,14 +285,7 @@ class Volume:
           float array of locations (Nx3),
           bool array of is_backface (N)
         """
-        src = np.asarray(src_points, self.dtype)
-        tgt = np.asarray(tgt_points, self.dtype)
-
-        if src.shape != tgt.shape:
-            raise ValueError("Source and target points arrays must be the same shape")
-
-        if src.shape[1:] != (3,):
-            raise ValueError("Points must be Nx3 array-like")
+        src, tgt = self._validate_points(src_points, tgt_points)
 
         if self._interpret_threads(threads):
             idxs, points, bfs = self._impl.intersections_many_threaded(

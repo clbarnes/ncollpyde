@@ -30,3 +30,6 @@ class TriMeshWrapper:
     def intersections_many_threaded(
         self, src_points: Points, tgt_points: Points
     ) -> Tuple[List[int], Points, List[bool]]: ...
+    def sdf_intersections(
+        self, points: Points, vectors: Points
+    ) -> Tuple[npt.NDArray[np.float_], npt.NDArray[np.float_]]: ...

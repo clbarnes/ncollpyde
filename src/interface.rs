@@ -4,6 +4,7 @@ use std::iter::repeat_with;
 use numpy::ndarray::{Array, Zip};
 use numpy::{IntoPyArray, PyArray1, PyArray2, PyReadonlyArray2};
 use parry3d_f64::math::{Point, Vector};
+use parry3d_f64::query::{Ray, RayCast};
 use parry3d_f64::shape::TriMesh;
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
@@ -156,6 +157,67 @@ impl TriMeshWrapper {
         let aabb = self.mesh.local_aabb();
         PyArray2::from_vec2(py, &[point_to_vec(&aabb.mins), point_to_vec(&aabb.maxs)]).unwrap()
     }
+
+    pub fn sdf_intersections<'py>(
+        &self,
+        py: Python<'py>,
+        points: PyReadonlyArray2<Precision>,
+        vecs: PyReadonlyArray2<Precision>,
+    ) -> (&'py PyArray1<Precision>, &'py PyArray1<Precision>) {
+        let diameter = self.mesh.local_bounding_sphere().radius() * 2.0;
+
+        let (dists, dot_norms): (Vec<Precision>, Vec<Precision>) = points
+            .as_array()
+            .rows()
+            .into_iter()
+            .map(|p| Point::new(p[0], p[1], p[2]))
+            .zip(
+                vecs.as_array()
+                    .rows()
+                    .into_iter()
+                    .map(|v| Vector::new(v[0], v[1], v[2]).normalize()),
+            )
+            .map(|(p, v)| {
+                let ray = Ray::new(p, v);
+                if let Some(inter) = self.mesh.cast_local_ray_and_get_normal(
+                    &ray, diameter, false, // unused
+                ) {
+                    (inter.toi, v.dot(&inter.normal))
+                } else {
+                    (Precision::INFINITY, Precision::NAN)
+                }
+            })
+            .unzip();
+        (
+            PyArray1::from_vec(py, dists),
+            PyArray1::from_vec(py, dot_norms),
+        )
+    }
+
+    // pub fn sdf_intersections_threaded<'py>(
+    //     &self,
+    //     py: Python<'py>,
+    //     points: PyReadonlyArray2<Precision>,
+    //     vecs: PyReadonlyArray2<Precision>,
+    // ) -> (&'py PyArray1<Precision>, &'py PyArray1<Precision>) {
+    //     let diameter = self.mesh.local_bounding_sphere().radius() * 2.0;
+
+    //     Zip::from(points.as_array().rows())
+    //         .and(vecs.as_array().rows())
+    //         .par_map_collect(|point, vector| {
+    //             let p = Point::new(point[0], point[1], point[2]);
+    //             let v = Vector::new(vector[0], vector[1], vector[2]).normalize();
+
+    //             let ray = Ray::new(p, v);
+    //             if let Some(inter) = self.mesh.cast_local_ray_and_get_normal(
+    //                 &ray, diameter, false, // unused
+    //             ) {
+    //                 (inter.toi, v.dot(&inter.normal))
+    //             } else {
+    //                 (Precision::INFINITY, Precision::NAN)
+    //             }
+    //         })
+    // }
 
     pub fn intersections_many<'py>(
         &self,

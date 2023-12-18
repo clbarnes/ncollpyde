@@ -1,6 +1,6 @@
 use parry3d_f64::math::{Isometry, Point, Vector};
 use parry3d_f64::query::{PointQuery, Ray, RayCast};
-use parry3d_f64::shape::TriMesh;
+use parry3d_f64::shape::{FeatureId, TriMesh};
 use rand::Rng;
 
 pub type Precision = f64;
@@ -61,11 +61,20 @@ pub fn points_cross_mesh(
     src_point: &Point<f64>,
     tgt_point: &Point<f64>,
 ) -> Option<(Point<f64>, bool)> {
+    points_cross_mesh_info(mesh, src_point, tgt_point)
+        .map(|(inter, _, ft)| (inter, mesh.is_backface(ft)))
+}
+
+pub fn points_cross_mesh_info(
+    mesh: &TriMesh,
+    src_point: &Point<f64>,
+    tgt_point: &Point<f64>,
+) -> Option<(Point<f64>, Vector<f64>, FeatureId)> {
     let ray = Ray::new(*src_point, tgt_point - src_point);
     mesh.cast_local_ray_and_get_normal(
         &ray, 1.0, false, // unused
     )
-    .map(|i| (ray.point_at(i.toi), mesh.is_backface(i.feature)))
+    .map(|i| (ray.point_at(i.toi), i.normal, i.feature))
 }
 
 pub fn dist_from_mesh(mesh: &TriMesh, point: &Point<f64>, rays: Option<&[Vector<f64>]>) -> f64 {
