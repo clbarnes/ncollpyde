@@ -45,8 +45,8 @@ def configure_threadpool(n_threads: Optional[int], name_prefix: Optional[str]):
     ----------
     n_threads : Optional[int]
         Number of threads to use.
-        If None or 0, will use the default
-        (see https://docs.rs/rayon/latest/rayon/struct.ThreadPoolBuilder.html#method.num_threads).
+        If None or 0, will use the default, see
+        https://docs.rs/rayon/latest/rayon/struct.ThreadPoolBuilder.html#method.num_threads.
     name_prefix : Optional[str]
         How to name threads created by this library.
         Will be suffixed with the thread index.
