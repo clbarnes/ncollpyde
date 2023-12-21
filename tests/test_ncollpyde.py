@@ -3,6 +3,7 @@
 
 """Tests for `ncollpyde` package."""
 from itertools import product
+from math import pi, sqrt
 import sys
 import subprocess as sp
 import logging
@@ -311,3 +312,17 @@ def test_configure_threadpool_twice():
     with pytest.raises(RuntimeError):
         configure_threadpool(3, "prefix")
         configure_threadpool(3, "prefix")
+
+
+@pytest.mark.parametrize(
+    ["point", "vec", "exp_dist", "exp_dot"],
+    [
+        ([0.5, 0.5, 0.5], [1, 0, 0], 0.5, -1),
+        ([-0.5, 0.5, 0.5], [1, 0, 0], -0.5, -1),
+        ([0.75, 0.5, 0.5], [1, 1, 0], sqrt(2 * 0.25**2), -np.cos(pi / 4)),
+    ],
+)
+def test_sdf_inner(simple_volume: Volume, point, vec, exp_dist, exp_dot):
+    dists, dots = simple_volume._sdf_intersections([point], [vec])
+    assert np.allclose(dists[0], exp_dist)
+    assert np.allclose(dots[0], exp_dot)
