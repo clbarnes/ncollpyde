@@ -7,11 +7,6 @@ from typing import TYPE_CHECKING, Optional, Tuple, Union, List
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-try:
-    import trimesh
-except ImportError:
-    trimesh = None
-
 from ._ncollpyde import (
     TriMeshWrapper,
     _index,
@@ -136,7 +131,9 @@ class Volume:
     def _validate(
         self, vertices: np.ndarray, triangles: np.ndarray
     ) -> Tuple[NDArray[np.float64], NDArray[np.uint32]]:
-        if trimesh:
+        try:
+            import trimesh
+
             tm = trimesh.Trimesh(vertices, triangles, validate=True)
             if not tm.is_volume:
                 logger.info("Mesh not valid, attempting to fix")
@@ -150,8 +147,7 @@ class Volume:
                     )
 
             return tm.vertices.astype(self.dtype), tm.faces.astype(np.uint32)
-
-        else:
+        except ImportError:
             warnings.warn("trimesh not installed; full validation not possible")
 
             if vertices.shape[1:] != (3,):
