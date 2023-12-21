@@ -1,14 +1,14 @@
 # build
-maturin==0.14.16
+maturin==1.4.0
 
 # run
-numpy==1.24.2
-trimesh[easy]==3.21.2
+numpy==1.26.2
+trimesh[easy]==4.0.7
 
 # test
 meshio==5.3.4
-pytest==7.2.2
-pytest-runner==6.0.0
+pytest==7.4.3
+pytest-runner==6.0.1
 
 # bench
 # pyoctree==0.2.10
@@ -16,11 +16,11 @@ pytest-benchmark==4.0.0
 
 # develop
 pip
-black==23.3.0
+black==23.12.0
 watchdog==3.0.0
 ruff
-coverage==7.2.2
-mypy==1.1.1
+coverage==7.3.4
+mypy==1.7.1
 
 # docs
 -r docs/requirements.txt

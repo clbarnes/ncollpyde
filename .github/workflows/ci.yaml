@@ -1,106 +1,106 @@
 on: [push, pull_request]
 
 defaults:
-  run:
-    shell: bash
+    run:
+        shell: bash
 
 jobs:
+    lint-rust:
+        runs-on: ubuntu-22.04
+        steps:
+            - uses: actions/checkout@v2
+            - uses: actions-rs/toolchain@v1
+              with:
+                  toolchain: stable
+                  components: rustfmt, clippy
+            - uses: Swatinem/rust-cache@v1
+            - uses: actions/cache@v2
+              with:
+                  path: ~/.cache/pip
+                  key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+                  restore-keys: |
+                      ${{ runner.os }}-pip-
+            - run: make lint-rust
 
-  lint-rust:
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          components: rustfmt, clippy
-      - uses: Swatinem/rust-cache@v1
-      - uses: actions/cache@v2
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-      - run: make lint-rust
+    lint-python:
+        runs-on: ubuntu-22.04
+        steps:
+            - uses: actions/checkout@v2
+            - uses: actions/setup-python@v2
+              with:
+                  python-version: "3.x"
+            - run: pip install $(grep -E '^(black|ruff|mypy|numpy)' requirements.txt)
+            - run: make lint-python
 
-  lint-python:
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: '3.x'
-      - run: pip install $(grep -E '^(black|ruff|mypy|numpy)' requirements.txt)
-      - run: make lint-python
+    test-rust:
+        runs-on: ubuntu-22.04
+        steps:
+            - uses: actions/checkout@v2
+            - uses: actions-rs/toolchain@v1
+              with:
+                  toolchain: stable
+            - uses: Swatinem/rust-cache@v1
+            - run: cargo test
 
-  test-rust:
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - uses: Swatinem/rust-cache@v1
-      - run: cargo test
+    test-python:
+        strategy:
+            fail-fast: false
+            matrix:
+                python-version:
+                    - "3.8"
+                    - "3.9"
+                    - "3.10"
+                    - "3.11"
+                    - "3.12"
+        runs-on: ubuntu-22.04
+        steps:
+            - uses: actions/checkout@v2
+            - uses: actions-rs/toolchain@v1
+              with:
+                  toolchain: stable
+            - uses: Swatinem/rust-cache@v1
+            - uses: actions/setup-python@v2
+              with:
+                  python-version: ${{ matrix.python-version }}
+            - uses: actions/cache@v2
+              with:
+                  path: ~/.cache/pip
+                  key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+                  restore-keys: |
+                      ${{ runner.os }}-pip-
+            - run: |
+                  sudo apt-get install libspatialindex-dev
+                  pip install -U pip wheel
+                  pip install -r requirements.txt
+              name: Install dependencies
+            - run: |
+                  mkdir -p $TGT_DIR
+                  rm -f $TGT_DIR/*.whl
+                  maturin build --release --interpreter python --out $TGT_DIR
+                  pip install $TGT_DIR/*.whl
+              name: Install package
+              env:
+                  TGT_DIR: "target/wheels/${{ matrix.python-version }}"
+            - run: pytest --verbose
 
-  test-python:
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version:
-          - '3.8'
-          - '3.9'
-          - '3.10'
-          - '3.11'
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - uses: Swatinem/rust-cache@v1
-      - uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-      - uses: actions/cache@v2
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-      - run: |
-          sudo apt-get install libspatialindex-dev
-          pip install -U pip wheel
-          pip install -r requirements.txt
-        name: Install dependencies
-      - run: |
-          mkdir -p $TGT_DIR
-          rm -f $TGT_DIR/*.whl
-          maturin build --release --interpreter python --out $TGT_DIR
-          pip install $TGT_DIR/*.whl
-        name: Install package
-        env:
-          TGT_DIR: "target/wheels/${{ matrix.python-version }}"
-      - run: pytest --verbose
-
-  deploy:
-    strategy:
-      matrix:
-        os: [macos-latest, windows-latest, ubuntu-20.04]
-    needs: [lint-rust, lint-python, test-rust, test-python]
-    runs-on: ${{ matrix.os }}
-    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/v')
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - uses: actions/setup-python@v2
-        with:
-          python-version: '3.9'
-      - uses: messense/maturin-action@v1
-        with:
-          manylinux: auto
-          command: publish
-          args: -u __token__ -p ${{ secrets.MATURIN_PASSWORD }} --skip-existing --universal2
-        name: Deploy wheels
+    deploy:
+        strategy:
+            matrix:
+                os: [macos-latest, windows-latest, ubuntu-20.04]
+        needs: [lint-rust, lint-python, test-rust, test-python]
+        runs-on: ${{ matrix.os }}
+        if: github.event_name == 'push' && contains(github.ref, 'refs/tags/v')
+        steps:
+            - uses: actions/checkout@v2
+            - uses: actions-rs/toolchain@v1
+              with:
+                  toolchain: stable
+            - uses: actions/setup-python@v2
+              with:
+                  python-version: "3.9"
+            - uses: messense/maturin-action@v1
+              with:
+                  manylinux: auto
+                  command: publish
+                  args: -u __token__ -p ${{ secrets.MATURIN_PASSWORD }} --skip-existing --universal2
+              name: Deploy wheels
