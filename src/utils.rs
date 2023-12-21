@@ -1,7 +1,7 @@
 use ndarray::ArrayView1;
 use parry3d_f64::math::{Isometry, Point, Vector};
 use parry3d_f64::query::{PointQuery, Ray, RayCast};
-use parry3d_f64::shape::{FeatureId, TriMesh};
+use parry3d_f64::shape::{FeatureId, Shape, TriMesh};
 use rand::Rng;
 
 pub type Precision = f64;
@@ -108,7 +108,10 @@ pub fn sdf_inner(
     if let Some(inter) = mesh.cast_local_ray_and_get_normal(
         &ray, diameter, false, // unused
     ) {
-        let dot = v.dot(&inter.normal);
+        let normal = mesh
+            .feature_normal_at_point(inter.feature, &ray.point_at(inter.toi))
+            .expect("Already checked collision");
+        let dot = v.dot(&normal);
         if mesh.is_backface(inter.feature) {
             (inter.toi, dot)
         } else {
