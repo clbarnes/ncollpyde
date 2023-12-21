@@ -243,6 +243,24 @@ class Volume:
     def _sdf_intersections(
         self, points: ArrayLike, vectors: ArrayLike, threads: Optional[bool] = None
     ) -> Tuple[NDArray, NDArray]:
+        """Compute values required for signed distance field.
+
+        :param points: Nx3 ndarray of floats
+            Points to calculate the distance from.
+            Should be within the axis-aligned bounding box of the mesh.
+        :param vectors: Nx3 ndarray of floats
+            Directions to fire rays from the given points.
+        :param threads: None,
+            Whether to parallelise the queries. If ``None`` (default),
+            refer to the instance's ``threads`` attribute.
+        :return: 2-tuple N-length np.ndarrays of floats.
+            The first is the distance,
+            which is negative if the collision is with a backface,
+            and infinity if there is no collision.
+            The second is the dot product of the vector
+            with the normal of the feature the ray hit,
+            NaN if there was no collision.
+        """
         p, v = self._validate_points(points, vectors)
         return self._impl.sdf_intersections(p, v, self._interpret_threads(threads))
 

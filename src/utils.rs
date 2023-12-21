@@ -79,7 +79,7 @@ pub fn points_cross_mesh_info(
 }
 
 pub fn dist_from_mesh(mesh: &TriMesh, point: &Point<f64>, rays: Option<&[Vector<f64>]>) -> f64 {
-    let mut dist = mesh.distance_to_point(&Isometry::identity(), point, true);
+    let mut dist = mesh.distance_to_local_point(point, true);
     if let Some(r) = rays {
         if mesh_contains_point(mesh, point, r) {
             dist = -dist;
@@ -108,7 +108,12 @@ pub fn sdf_inner(
     if let Some(inter) = mesh.cast_local_ray_and_get_normal(
         &ray, diameter, false, // unused
     ) {
-        (inter.toi, v.dot(&inter.normal))
+        let dot = v.dot(&inter.normal);
+        if mesh.is_backface(inter.feature) {
+            (inter.toi, dot)
+        } else {
+            (-inter.toi, dot)
+        }
     } else {
         (Precision::INFINITY, Precision::NAN)
     }

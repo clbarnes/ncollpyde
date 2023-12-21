@@ -127,9 +127,7 @@ impl TriMeshWrapper {
         let v = vs
             .iter()
             .fold(Vec::with_capacity(vs.len() * 3), |mut out, p| {
-                out.push(p.x);
-                out.push(p.y);
-                out.push(p.z);
+                out.extend(p.iter().cloned());
                 out
             });
         Array2::from_shape_vec((vs.len(), 3), v)
