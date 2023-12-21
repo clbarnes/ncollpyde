@@ -241,10 +241,10 @@ class Volume:
         return out
 
     def _sdf_intersections(
-        self, points: ArrayLike, vectors: ArrayLike
+        self, points: ArrayLike, vectors: ArrayLike, threads: Optional[bool] = None
     ) -> Tuple[NDArray, NDArray]:
         p, v = self._validate_points(points, vectors)
-        return self._impl.sdf_intersections(p, v)
+        return self._impl.sdf_intersections(p, v, self._interpret_threads(threads))
 
     def intersections(
         self,

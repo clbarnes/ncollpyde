@@ -1,3 +1,4 @@
+use ndarray::ArrayView1;
 use parry3d_f64::math::{Isometry, Point, Vector};
 use parry3d_f64::query::{PointQuery, Ray, RayCast};
 use parry3d_f64::shape::{FeatureId, TriMesh};
@@ -85,6 +86,32 @@ pub fn dist_from_mesh(mesh: &TriMesh, point: &Point<f64>, rays: Option<&[Vector<
         }
     }
     dist
+}
+
+/// The diagonal length of the mesh's axis-aligned bounding box.
+///
+/// Useful as an upper bound for ray length.
+pub fn aabb_diag(mesh: &TriMesh) -> f64 {
+    mesh.local_aabb().extents().norm()
+}
+
+pub fn sdf_inner(
+    point: ArrayView1<Precision>,
+    vector: ArrayView1<Precision>,
+    diameter: Precision,
+    mesh: &TriMesh,
+) -> (Precision, Precision) {
+    let p = Point::new(point[0], point[1], point[2]);
+    let v = Vector::new(vector[0], vector[1], vector[2]).normalize();
+
+    let ray = Ray::new(p, v);
+    if let Some(inter) = mesh.cast_local_ray_and_get_normal(
+        &ray, diameter, false, // unused
+    ) {
+        (inter.toi, v.dot(&inter.normal))
+    } else {
+        (Precision::INFINITY, Precision::NAN)
+    }
 }
 
 #[cfg(test)]

@@ -10,10 +10,7 @@ import logging
 import numpy as np
 import pytest
 
-try:
-    import trimesh
-except ImportError:
-    trimesh = None
+import trimesh
 
 from ncollpyde import PRECISION, Volume, configure_threadpool
 
