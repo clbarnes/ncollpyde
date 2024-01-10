@@ -2,7 +2,7 @@ use ndarray::ArrayView1;
 use parry3d_f64::math::{Point, Vector};
 use parry3d_f64::na::{distance, Unit};
 use parry3d_f64::query::{PointQuery, Ray, RayCast};
-use parry3d_f64::shape::{FeatureId, Shape, TriMesh, TriMeshFlags};
+use parry3d_f64::shape::{FeatureId, TriMesh, TriMeshFlags};
 use rand::Rng;
 
 pub type Precision = f64;

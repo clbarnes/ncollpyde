@@ -325,9 +325,9 @@ def test_configure_threadpool_twice():
 @pytest.mark.parametrize(
     ["point", "vec", "exp_dist", "exp_dot"],
     [
-        ([0.5, 0.5, 0.5], [1, 0, 0], 0.5, -1),
-        ([-0.5, 0.5, 0.5], [1, 0, 0], -0.5, -1),
-        ([0.75, 0.5, 0.5], [1, 1, 0], sqrt(2 * 0.25**2), -np.cos(pi / 4)),
+        ([0.5, 0.5, 0.5], [1, 0, 0], 0.5, 1),
+        ([-0.5, 0.5, 0.5], [1, 0, 0], -0.5, 1),
+        ([0.75, 0.5, 0.5], [1, 1, 0], sqrt(2 * 0.25**2), np.cos(pi / 4)),
     ],
 )
 def test_sdf_inner(simple_volume: Volume, point, vec, exp_dist, exp_dot):
