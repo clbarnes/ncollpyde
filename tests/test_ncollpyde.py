@@ -57,12 +57,6 @@ def test_contains_results(volume: Volume):
     assert np.allclose(ray, psnorms)
 
 
-def test_0_rays(mesh):
-    vol = Volume.from_meshio(mesh, n_rays=0)
-    points = [p for p, _ in points_expected]
-    assert np.array_equal(vol.contains(points), [False] * len(points))
-
-
 def test_no_validation(mesh):
     triangles = mesh.cells_dict["triangle"]
     Volume(mesh.points, triangles, True)

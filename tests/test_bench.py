@@ -221,7 +221,7 @@ def test_trimesh_contains(trimesh_volume, sample_points, expected, benchmark):
 
 
 @pytest.mark.benchmark(group=CONTAINS_SERIAL)
-@pytest.mark.parametrize("n_rays", [0, 1, 2, 4, 8, 16])
+@pytest.mark.parametrize("n_rays", [1, 2, 4, 8, 16])
 def test_ncollpyde_contains(mesh, n_rays, sample_points, expected, benchmark):
     ncollpyde_volume = Volume.from_meshio(mesh, n_rays=n_rays)
     ncollpyde_volume.threads = False

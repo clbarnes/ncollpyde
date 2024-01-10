@@ -217,7 +217,7 @@ class Volume:
         :param coords:
         :param n_rays: Optional[int]
             If None, use the maximum rays defined on construction.
-            If < 0, use signed distance strategy
+            If < 1, use signed distance strategy
             (more robust, but slower for many meshes).
             Otherwise, use this many meshes, up to the maximum defined on construction.
         :param consensus: Optional[int]
@@ -235,7 +235,7 @@ class Volume:
         coords = self._as_points(coords)
         if n_rays is None:
             n_rays = self.n_rays
-        elif n_rays < 0:
+        elif n_rays < 1:
             n_rays = None
         elif n_rays > self.n_rays:
             logger.warning(
@@ -245,6 +245,7 @@ class Volume:
 
         if n_rays is None:
             consensus = 1
+            n_rays = 0
         else:
             if consensus is None:
                 consensus = n_rays // 2 + 1

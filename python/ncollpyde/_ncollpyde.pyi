@@ -17,7 +17,7 @@ class TriMeshWrapper:
         self, points: Points, indices: Indices, n_rays: int, ray_seed: int
     ): ...
     def contains(
-        self, points: Points, n_rays: Optional[int], consensus: int, parallel: bool
+        self, points: Points, n_rays: int, consensus: int, parallel: bool
     ) -> npt.NDArray[np.bool_]: ...
     def distance(
         self, points: Points, signed: bool, parallel: bool

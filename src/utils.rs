@@ -83,7 +83,7 @@ pub fn mesh_contains_point(
             return false;
         }
     }
-    return false;
+    false
 }
 
 pub fn mesh_contains_point_oriented(mesh: &TriMesh, point: &Point<f64>) -> bool {
