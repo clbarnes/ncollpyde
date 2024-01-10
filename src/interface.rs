@@ -6,15 +6,15 @@ use numpy::ndarray::{Array, Zip};
 use numpy::{IntoPyArray, PyArray1, PyArray2, PyReadonlyArray2};
 use parry3d_f64::math::{Point, Vector};
 use parry3d_f64::shape::TriMesh;
-use pyo3::exceptions::PyRuntimeError;
+use pyo3::exceptions::{PyRuntimeError, PyValueError};
 use pyo3::prelude::*;
 use rand::SeedableRng;
 use rand_pcg::Pcg64Mcg;
 use rayon::{prelude::*, ThreadPoolBuilder};
 
 use crate::utils::{
-    aabb_diag, dist_from_mesh, mesh_contains_point, points_cross_mesh, random_dir, sdf_inner,
-    Precision,
+    aabb_diag, dist_from_mesh, mesh_contains_point, mesh_contains_point_oriented,
+    points_cross_mesh, random_dir, sdf_inner, Precision, FLAGS,
 };
 
 fn vec_to_point<T: 'static + Debug + PartialEq + Copy>(v: Vec<T>) -> Point<T> {
@@ -39,7 +39,7 @@ impl TriMeshWrapper {
         indices: PyReadonlyArray2<u32>,
         n_rays: usize,
         ray_seed: u64,
-    ) -> Self {
+    ) -> PyResult<Self> {
         let points2 = points
             .as_array()
             .rows()
@@ -52,24 +52,27 @@ impl TriMeshWrapper {
             .into_iter()
             .map(|v| [v[0], v[1], v[2]])
             .collect();
-        let mesh = TriMesh::new(points2, indices2);
+        let mut mesh = TriMesh::new(points2, indices2);
+
+        mesh.set_flags(FLAGS)
+            .map_err(|e| PyValueError::new_err(format!("Invalid mesh topology: {e}")))?;
 
         if n_rays > 0 {
             let len = aabb_diag(&mesh);
 
             let mut rng = Pcg64Mcg::seed_from_u64(ray_seed);
 
-            Self {
+            Ok(Self {
                 mesh,
                 ray_directions: repeat_with(|| random_dir(&mut rng, len))
                     .take(n_rays)
                     .collect(),
-            }
+            })
         } else {
-            Self {
+            Ok(Self {
                 mesh,
                 ray_directions: Vec::default(),
-            }
+            })
         }
     }
 
@@ -80,15 +83,10 @@ impl TriMeshWrapper {
         signed: bool,
         parallel: bool,
     ) -> &'py PyArray1<Precision> {
-        let rays = if signed {
-            Some(&self.ray_directions[..])
-        } else {
-            None
-        };
         let p_arr = points.as_array();
         let zipped = Zip::from(p_arr.rows());
         let clos =
-            |v: ArrayView1<f64>| dist_from_mesh(&self.mesh, &Point::new(v[0], v[1], v[2]), rays);
+            |v: ArrayView1<f64>| dist_from_mesh(&self.mesh, &Point::new(v[0], v[1], v[2]), signed);
 
         let collected = if parallel {
             zipped.par_map_collect(clos)
@@ -102,23 +100,38 @@ impl TriMeshWrapper {
         &self,
         py: Python<'py>,
         points: PyReadonlyArray2<Precision>,
+        n_rays: Option<usize>,
+        consensus: usize,
         parallel: bool,
     ) -> &'py PyArray1<bool> {
         let p_arr = points.as_array();
         let zipped = Zip::from(p_arr.rows());
-        let clos = |r: ArrayView1<f64>| {
-            mesh_contains_point(
-                &self.mesh,
-                &Point::new(r[0], r[1], r[2]),
-                &self.ray_directions,
-            )
+
+        let collected = if let Some(n) = n_rays {
+            // use ray casting
+            let rays = &self.ray_directions[..n];
+            let clos = |r: ArrayView1<f64>| {
+                mesh_contains_point(&self.mesh, &Point::new(r[0], r[1], r[2]), rays, consensus)
+            };
+
+            if parallel {
+                zipped.par_map_collect(clos)
+            } else {
+                zipped.map_collect(clos)
+            }
+        } else {
+            // use pseudonormals
+            let clos = |r: ArrayView1<f64>| {
+                mesh_contains_point_oriented(&self.mesh, &Point::new(r[0], r[1], r[2]))
+            };
+
+            if parallel {
+                zipped.par_map_collect(clos)
+            } else {
+                zipped.map_collect(clos)
+            }
         };
 
-        let collected = if parallel {
-            zipped.par_map_collect(clos)
-        } else {
-            zipped.map_collect(clos)
-        };
         collected.into_pyarray(py)
     }
 
@@ -225,37 +238,34 @@ impl TriMeshWrapper {
         let mut idxs = Vec::default();
         let mut intersections = Vec::default();
         let mut is_backface = Vec::default();
-        let mut count = 0;
-        for (idx, point, is_bf) in src_points
+        src_points
             .as_array()
             .rows()
             .into_iter()
             .zip(tgt_points.as_array().rows().into_iter())
             .zip(0_u64..)
-            .filter_map(|((src, tgt), i)| {
-                points_cross_mesh(
+            .for_each(|((src, tgt), i)| {
+                if let Some((pt, is_bf)) = points_cross_mesh(
                     &self.mesh,
                     &Point::new(src[0], src[1], src[2]),
                     &Point::new(tgt[0], tgt[1], tgt[2]),
-                )
-                .map(|o| (i, o.0, o.1))
-            })
-        {
-            idxs.push(idx);
-            intersections.extend(point.iter().cloned());
-            is_backface.push(is_bf);
-            count += 1;
-        }
+                ) {
+                    idxs.push(i);
+                    intersections.extend(pt.iter());
+                    is_backface.push(is_bf);
+                }
+            });
 
         (
             PyArray1::from_vec(py, idxs),
-            Array::from_shape_vec((count, 3), intersections)
+            Array::from_shape_vec((is_backface.len(), 3), intersections)
                 .unwrap()
                 .into_pyarray(py),
             PyArray1::from_vec(py, is_backface),
         )
     }
 
+    #[deprecated]
     pub fn intersections_many_threaded(
         &self,
         src_points: Vec<Vec<Precision>>,
@@ -272,6 +282,61 @@ impl TriMeshWrapper {
             .unzip();
 
         (idxs, intersections, is_backface)
+    }
+
+    pub fn intersections_many_threaded2<'py>(
+        &self,
+        py: Python<'py>,
+        src_points: PyReadonlyArray2<Precision>,
+        tgt_points: PyReadonlyArray2<Precision>,
+    ) -> (
+        &'py PyArray1<u64>,
+        &'py PyArray2<Precision>,
+        &'py PyArray1<bool>,
+    ) {
+        let src_arr = src_points.as_array();
+        let tgt_arr = tgt_points.as_array();
+        let zipped = Zip::indexed(src_arr.rows()).and(tgt_arr.rows());
+
+        let (out_idxs, out_pts, out_is_bf) = zipped
+            .into_par_iter()
+            // calculate the output rows, discarding non-intersections
+            .filter_map(|(idx, src, tgt)| {
+                points_cross_mesh(
+                    &self.mesh,
+                    &Point::new(src[0], src[1], src[2]),
+                    &Point::new(tgt[0], tgt[1], tgt[2]),
+                )
+                .map(|o| (idx as u64, o.0, o.1))
+            })
+            // convert chunks of results into flat vecs
+            .fold(
+                || (vec![], vec![], vec![]),
+                |(mut idx, mut pts, mut is_backface), (i, pt, is_bf)| {
+                    idx.push(i);
+                    pts.extend(pt.iter());
+                    is_backface.push(is_bf);
+                    (idx, pts, is_backface)
+                },
+            )
+            // concatenate the chunked flat vecs
+            .reduce(
+                || (vec![], vec![], vec![]),
+                |(mut idxs, mut pts, mut is_backfaces), (mut idx, mut pt, mut is_bf)| {
+                    idxs.append(&mut idx);
+                    pts.append(&mut pt);
+                    is_backfaces.append(&mut is_bf);
+                    (idxs, pts, is_backfaces)
+                },
+            );
+
+        (
+            PyArray1::from_vec(py, out_idxs),
+            Array::from_shape_vec((out_is_bf.len(), 3), out_pts)
+                .unwrap()
+                .into_pyarray(py),
+            PyArray1::from_vec(py, out_is_bf),
+        )
     }
 }
 

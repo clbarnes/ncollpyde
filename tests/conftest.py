@@ -17,7 +17,7 @@ def mesh():
 
 @pytest.fixture
 def volume(mesh):
-    return Volume.from_meshio(meshio, validate=True)
+    return Volume.from_meshio(mesh, validate=True)
 
 
 @pytest.fixture

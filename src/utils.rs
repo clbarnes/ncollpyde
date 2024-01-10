@@ -1,10 +1,19 @@
 use ndarray::ArrayView1;
-use parry3d_f64::math::{Isometry, Point, Vector};
+use parry3d_f64::math::{Point, Vector};
+use parry3d_f64::na::{distance, Unit};
 use parry3d_f64::query::{PointQuery, Ray, RayCast};
-use parry3d_f64::shape::{FeatureId, Shape, TriMesh};
+use parry3d_f64::shape::{FeatureId, Shape, TriMesh, TriMeshFlags};
 use rand::Rng;
 
 pub type Precision = f64;
+
+pub const FLAGS: TriMeshFlags = TriMeshFlags::empty()
+    .union(TriMeshFlags::ORIENTED)
+    .union(TriMeshFlags::DELETE_BAD_TOPOLOGY_TRIANGLES)
+    .union(TriMeshFlags::HALF_EDGE_TOPOLOGY)
+    .union(TriMeshFlags::MERGE_DUPLICATE_VERTICES)
+    .union(TriMeshFlags::DELETE_DEGENERATE_TRIANGLES)
+    .union(TriMeshFlags::DELETE_DUPLICATE_TRIANGLES);
 
 pub fn random_dir<R: Rng>(rng: &mut R, length: Precision) -> Vector<Precision> {
     let unscaled: Vector<Precision> = [
@@ -38,23 +47,47 @@ pub fn mesh_contains_point(
     mesh: &TriMesh,
     point: &Point<f64>,
     ray_directions: &[Vector<f64>],
+    consensus: usize,
 ) -> bool {
     if !mesh.local_aabb().contains_local_point(point) {
         return false;
     }
 
-    // check whether point is on boundary
-    if mesh.contains_point(&Isometry::identity(), point) {
-        return true;
-    }
+    // this previously checked if point was on boundary,
+    // now it does a full (slow) containment check
+    // if mesh.contains_local_point(point) {
+    //     return true;
+    // }
 
-    if ray_directions.is_empty() {
-        false
-    } else {
-        ray_directions
-            .iter()
-            .all(|v| mesh_contains_point_ray(mesh, point, v))
+    // ray_directions
+    //     .iter()
+    //     .filter(|v| mesh_contains_point_ray(mesh, point, v))
+    //     .count()
+    //     >= consensus
+
+    let mut inside_remaining = consensus;
+    let mut remaining = ray_directions.len();
+    for contains in ray_directions
+        .iter()
+        .map(|v| mesh_contains_point_ray(mesh, point, v))
+    {
+        remaining -= 1;
+        if contains {
+            if inside_remaining == 1 {
+                // early return if we've met consensus
+                return true;
+            }
+            inside_remaining -= 1;
+        } else if remaining < inside_remaining {
+            // early return if there aren't enough rays left to reach consensus
+            return false;
+        }
     }
+    return false;
+}
+
+pub fn mesh_contains_point_oriented(mesh: &TriMesh, point: &Point<f64>) -> bool {
+    mesh.local_aabb().contains_local_point(point) && mesh.contains_local_point(point)
 }
 
 pub fn points_cross_mesh(
@@ -78,14 +111,14 @@ pub fn points_cross_mesh_info(
     .map(|i| (ray.point_at(i.toi), i.normal, i.feature))
 }
 
-pub fn dist_from_mesh(mesh: &TriMesh, point: &Point<f64>, rays: Option<&[Vector<f64>]>) -> f64 {
-    let mut dist = mesh.distance_to_local_point(point, true);
-    if let Some(r) = rays {
-        if mesh_contains_point(mesh, point, r) {
-            dist = -dist;
-        }
+pub fn dist_from_mesh(mesh: &TriMesh, point: &Point<f64>, signed: bool) -> f64 {
+    let pp = mesh.project_local_point(point, true);
+    let dist = distance(&pp.point, point);
+    if signed && pp.is_inside {
+        -dist
+    } else {
+        dist
     }
-    dist
 }
 
 /// The diagonal length of the mesh's axis-aligned bounding box.
@@ -95,23 +128,17 @@ pub fn aabb_diag(mesh: &TriMesh) -> f64 {
     mesh.local_aabb().extents().norm()
 }
 
-pub fn sdf_inner(
-    point: ArrayView1<Precision>,
-    vector: ArrayView1<Precision>,
-    diameter: Precision,
+pub fn ray_toi_dot(
+    p: Point<Precision>,
+    v: Unit<Vector<Precision>>,
+    length: Precision,
     mesh: &TriMesh,
 ) -> (Precision, Precision) {
-    let p = Point::new(point[0], point[1], point[2]);
-    let v = Vector::new(vector[0], vector[1], vector[2]).normalize();
-
-    let ray = Ray::new(p, v);
+    let ray = Ray::new(p, *v);
     if let Some(inter) = mesh.cast_local_ray_and_get_normal(
-        &ray, diameter, false, // unused
+        &ray, length, true, // unused
     ) {
-        let normal = mesh
-            .feature_normal_at_point(inter.feature, &ray.point_at(inter.toi))
-            .expect("Already checked collision");
-        let dot = v.dot(&normal);
+        let dot = v.dot(&inter.normal).abs();
         if mesh.is_backface(inter.feature) {
             (inter.toi, dot)
         } else {
@@ -122,8 +149,26 @@ pub fn sdf_inner(
     }
 }
 
+/// Find the distance to a mesh boundary from a point along a particular direction.
+///
+/// Returns a tuple of the distance and the absolute dot product between the vector and the face normal.
+/// The distance is positive if the intersection was with a backface,
+/// negative if the intersection was with an external face.
+pub fn sdf_inner(
+    point: ArrayView1<Precision>,
+    vector: ArrayView1<Precision>,
+    diameter: Precision,
+    mesh: &TriMesh,
+) -> (Precision, Precision) {
+    let p = Point::new(point[0], point[1], point[2]);
+    let v = Unit::new_normalize(Vector::new(vector[0], vector[1], vector[2]));
+    ray_toi_dot(p, v, diameter, mesh)
+}
+
 #[cfg(test)]
 mod tests {
+    use approx::assert_relative_eq;
+    use std::f64::consts::TAU;
     use std::fs::OpenOptions;
     use std::path::PathBuf;
     use stl_io::read_stl;
@@ -146,7 +191,7 @@ mod tests {
         let io_obj = read_stl(&mut f).expect("Couldn't parse STL");
         io_obj.validate().expect("Mesh is invalid");
 
-        TriMesh::new(
+        let mut tm = TriMesh::new(
             io_obj
                 .vertices
                 .iter()
@@ -163,7 +208,9 @@ mod tests {
                     ]
                 })
                 .collect(),
-        )
+        );
+        tm.set_flags(FLAGS).unwrap();
+        tm
     }
 
     fn cube() -> TriMesh {
@@ -172,17 +219,17 @@ mod tests {
 
     #[test]
     fn corner_contains() {
-        assert!(cube().contains_point(&Isometry::identity(), &Point::new(0.0, 0.0, 0.0)))
+        assert!(cube().contains_local_point(&Point::new(0.0, 0.0, 0.0)))
     }
 
     #[test]
     fn edge_contains() {
-        assert!(cube().contains_point(&Isometry::identity(), &Point::new(0.5, 0.0, 0.0)))
+        assert!(cube().contains_local_point(&Point::new(0.5, 0.0, 0.0)))
     }
 
     #[test]
     fn face_contains() {
-        assert!(cube().contains_point(&Isometry::identity(), &Point::new(0.5, 0.5, 0.0)))
+        assert!(cube().contains_local_point(&Point::new(0.5, 0.5, 0.0)))
     }
 
     fn assert_ray(p: [Precision; 3], v: [Precision; 3], is_inside: bool) {
@@ -309,41 +356,85 @@ mod tests {
         assert!(get_cross([1.5, 1.5, 1.5], [2.0, 2.0, 2.0]).is_none());
     }
 
-    fn axis_rays() -> Vec<Vector<Precision>> {
-        vec![
-            Vector::new(1.0, 0.0, 0.0),
-            Vector::new(0.0, 1.0, 0.0),
-            Vector::new(0.0, 0.0, 1.0),
-        ]
-    }
-
-    fn assert_dist(
-        mesh: &TriMesh,
-        point: &Point<Precision>,
-        rays: Option<&[Vector<Precision>]>,
-        expected: Precision,
-    ) {
-        assert_eq!(dist_from_mesh(mesh, point, rays), expected)
+    fn assert_dist(mesh: &TriMesh, point: &Point<Precision>, signed: bool, expected: Precision) {
+        assert_eq!(dist_from_mesh(mesh, point, signed), expected)
     }
 
     #[test]
     fn distance_signed() {
-        let rays = axis_rays();
         let cube = cube();
-        assert_dist(&cube, &Point::new(1.0, 1.0, 1.0), Some(&rays), 0.0);
-        assert_dist(&cube, &Point::new(0.5, 0.5, 0.5), Some(&rays), -0.5);
-        assert_dist(&cube, &Point::new(2.0, 1.0, 1.0), Some(&rays), 1.0);
+        assert_dist(&cube, &Point::new(1.0, 1.0, 1.0), true, 0.0);
+        assert_dist(&cube, &Point::new(0.5, 0.5, 0.5), true, -0.5);
+        assert_dist(&cube, &Point::new(2.0, 1.0, 1.0), true, 1.0);
         let three: Precision = 3.0;
-        assert_dist(&cube, &Point::new(2.0, 2.0, 2.0), Some(&rays), three.sqrt());
+        assert_dist(&cube, &Point::new(2.0, 2.0, 2.0), true, three.sqrt());
     }
 
     #[test]
     fn distance_unsigned() {
         let cube = cube();
-        assert_dist(&cube, &Point::new(1.0, 1.0, 1.0), None, 0.0);
-        assert_dist(&cube, &Point::new(0.5, 0.5, 0.5), None, 0.5);
-        assert_dist(&cube, &Point::new(2.0, 1.0, 1.0), None, 1.0);
-        let three: Precision = 3.0;
-        assert_dist(&cube, &Point::new(2.0, 2.0, 2.0), None, three.sqrt());
+        assert_dist(&cube, &Point::new(0.5, 0.5, 0.5), false, 0.5);
+    }
+
+    #[test]
+    fn containment_with_psnorms() {
+        let cube = cube();
+        assert!(
+            !cube.contains_local_point(&[1.5, 0.5, 0.5].into()),
+            "containment check failed for outside"
+        );
+        assert!(
+            cube.contains_local_point(&[0.5, 0.5, 0.5].into()),
+            "containment check failed for center"
+        );
+        assert!(
+            cube.contains_local_point(&[0.0, 0.0, 0.0].into()),
+            "containment check failed for vertex"
+        );
+        assert!(
+            cube.contains_local_point(&[0.5, 0.0, 0.0].into()),
+            "containment check failed for edge"
+        );
+        assert!(
+            cube.contains_local_point(&[0.5, 0.5, 0.0].into()),
+            "containment check failed for face"
+        );
+    }
+
+    fn get_sdf_results(
+        point: &[Precision; 3],
+        direction: &[Precision; 3],
+        mesh: &TriMesh,
+    ) -> (Precision, Precision) {
+        let length = aabb_diag(mesh);
+        let v = Unit::new_normalize(Vector::new(direction[0], direction[1], direction[2]));
+        ray_toi_dot(point.clone().into(), v, length, mesh)
+    }
+
+    #[test]
+    fn sdf_miss() {
+        let vol = cube();
+        let (dist, dot) = get_sdf_results(&[2.0, 2.0, 2.0], &[1.0, 1.0, 1.0], &vol);
+        assert_eq!(dist, Precision::INFINITY);
+        assert!(dot.is_nan());
+    }
+
+    #[test]
+    fn sdf_direct() {
+        let vol = cube();
+        let res = get_sdf_results(&[-0.5, 0.5, 0.5], &[1.0, 0.0, 0.0], &vol);
+        assert_eq!(res, (-0.5, 1.0));
+    }
+
+    #[test]
+    fn sdf_diag() {
+        let vol = cube();
+        let offset = -0.1;
+        let angle = TAU / 8.; // 45deg
+        let exp_dist = offset / angle.cos();
+        let exp_dot = (TAU / 8.).cos();
+        let (dist, dot) = get_sdf_results(&[offset, 0.5, 0.5], &[1.0, 1.0, 0.0], &vol);
+        assert_relative_eq!(dist, exp_dist);
+        assert_relative_eq!(dot, exp_dot);
     }
 }

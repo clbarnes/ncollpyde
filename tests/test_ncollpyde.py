@@ -7,6 +7,7 @@ from math import pi, sqrt
 import sys
 import subprocess as sp
 import logging
+from ncollpyde.main import points_around_vol
 
 import numpy as np
 import pytest
@@ -47,6 +48,13 @@ def test_many(mesh, threads):
 
     vol = Volume.from_meshio(mesh)
     assert np.array_equal(vol.contains(points, threads=threads), expected)
+
+
+def test_contains_results(volume: Volume):
+    pts = points_around_vol(volume, 1000, 0.1)
+    ray = volume.contains(pts, n_rays=3, consensus=3, threads=False)
+    psnorms = volume.contains(pts, n_rays=-1, threads=False)
+    assert np.allclose(ray, psnorms)
 
 
 def test_0_rays(mesh):
@@ -233,7 +241,7 @@ def test_intersections_threads(simple_volume, threads):
         [1.5, 0.5, 1.5],
     ]
 
-    idxs, _, _ = simple_volume.intersections(sources, targets, threads)
+    idxs, _, _ = simple_volume.intersections(sources, targets, threads=threads)
     assert len(idxs) == 1
     assert idxs[0] == 1
 
@@ -281,7 +289,7 @@ def test_near_miss(simple_volume: Volume, steps, angle):
         ([0.5, 0.5, 0.5], -0.5),
     ],
 )
-def test_distance_unsigned(simple_volume, point, expected, signed):
+def test_distance(simple_volume, point, expected, signed):
     if not signed:
         expected = np.abs(expected)
     assert np.allclose(
@@ -326,3 +334,21 @@ def test_sdf_inner(simple_volume: Volume, point, vec, exp_dist, exp_dot):
     dists, dots = simple_volume._sdf_intersections([point], [vec])
     assert np.allclose(dists[0], exp_dist)
     assert np.allclose(dots[0], exp_dot)
+
+
+def assert_intersection_results(test, ref):
+    test_dict = {idx: (tuple(pt), is_bf) for idx, pt, is_bf in zip(*test)}
+    ref_dict = {idx: (tuple(pt), is_bf) for idx, pt, is_bf in zip(*ref)}
+    assert test_dict == ref_dict
+
+
+def test_intersections_impls(volume: Volume):
+    n_edges = 1000
+    starts = points_around_vol(volume, n_edges, seed=1991)
+    stops = points_around_vol(volume, n_edges, seed=1992)
+
+    serial = volume.intersections(starts, stops, threads=False)
+    par = volume.intersections(starts, stops, threads=True)
+    assert_intersection_results(serial, par)
+    par2 = volume._impl.intersections_many_threaded2(starts, stops)
+    assert_intersection_results(serial, par2)

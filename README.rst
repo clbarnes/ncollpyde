@@ -105,7 +105,7 @@ Known issues
 
 * Performance gains for multi-threaded queries are underwhelming, especially for ray intersections: see `this issue <https://github.com/clbarnes/ncollpyde/issues/12>`_
 * Very rare false positives for containment
-   * Due to a `bug in the underlying library <https://github.com/rustsim/ncollide/issues/335>`_
+   * Due to a `bug in the underlying library <https://github.com/dimforge/parry/issues/171>`_
    * Only happens when the point is outside the mesh and fires a ray which touches a single edge or vertex of the mesh.
    * Also affects ``is_backface`` result for ray intersection checks
 * manylinux-compatible wheels are built on CI but not necessarily in your local environment. Always allow CI to deploy the wheels.
