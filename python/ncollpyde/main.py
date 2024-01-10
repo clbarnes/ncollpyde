@@ -350,7 +350,7 @@ class Volume:
         src, tgt = self._validate_points(src_points, tgt_points)
 
         if self._interpret_threads(threads):
-            return self._impl.intersections_many_threaded2(src, tgt)
+            return self._impl.intersections_many_threaded(src, tgt)
         else:
             return self._impl.intersections_many(src, tgt)
 

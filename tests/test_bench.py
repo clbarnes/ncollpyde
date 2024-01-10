@@ -266,8 +266,8 @@ def test_ncollpyde_intersection(mesh, benchmark, threads):
 @pytest.mark.parametrize(
     ("method_name",),
     [
-        # ("intersections_many_threaded",),
-        ("intersections_many_threaded2",),
+        ("intersections_many_threaded",),
+        # ("intersections_many_threaded2",),
     ],
 )
 def test_ncollpyde_intersection_impls(mesh, benchmark, method_name):

@@ -344,5 +344,5 @@ def test_intersections_impls(volume: Volume):
     serial = volume.intersections(starts, stops, threads=False)
     par = volume.intersections(starts, stops, threads=True)
     assert_intersection_results(serial, par)
-    par2 = volume._impl.intersections_many_threaded2(starts, stops)
+    par2 = volume._impl.intersections_many_threaded(starts, stops)
     assert_intersection_results(serial, par2)

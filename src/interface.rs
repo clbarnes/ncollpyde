@@ -265,7 +265,7 @@ impl TriMeshWrapper {
         )
     }
 
-    pub fn intersections_many_threaded2<'py>(
+    pub fn intersections_many_threaded<'py>(
         &self,
         py: Python<'py>,
         src_points: PyReadonlyArray2<Precision>,
