@@ -3,7 +3,7 @@ import random
 import warnings
 from multiprocessing import cpu_count
 from typing import TYPE_CHECKING, Optional, Tuple, Union, List
-from enum import IntFlag, auto
+from enum import IntFlag
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
@@ -36,6 +36,7 @@ class Validation(IntFlag):
     Combine with `|`.
     Must contain ORIENTED (see `Validation.minimum()`).
     """
+
     HALF_EDGE_TOPOLOGY = 1
     CONNECTED_COMPONENTS = 2
     DELETE_BAD_TOPOLOGY_TRIANGLES = 4
@@ -150,9 +151,7 @@ class Volume:
         """
         vert = np.asarray(vertices, self.dtype)
         if len(vert) > np.iinfo(INDEX).max:
-            raise ValueError(
-                f"Cannot represent {len(vert)} vertices with {INDEX}"
-            )
+            raise ValueError(f"Cannot represent {len(vert)} vertices with {INDEX}")
         tri = np.asarray(triangles, INDEX)
         if isinstance(validate, bool):
             warnings.warn(
