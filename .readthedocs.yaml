@@ -3,26 +3,26 @@
 version: 2
 
 sphinx:
-  builder: html
+    builder: html
 
 build:
-  os: "ubuntu-22.04"
-  tools:
-    python: "3.9"
-  apt_packages:
-    - curl
-    - build-essential
-    - gcc
-    - make
-  jobs:
-    pre_create_environment:
-      - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-    pre_install:
-      - /bin/bash scripts/cargo_hack.sh
-
+    os: "ubuntu-22.04"
+    tools:
+        python: "3.9"
+        rust: "1.70"
+    # apt_packages:
+    #     - curl
+    #     - build-essential
+    #     - gcc
+    #     - make
+    # jobs:
+    #     pre_create_environment:
+    #         - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    #     pre_install:
+    #         - /bin/bash scripts/cargo_hack.sh
 
 python:
-  install:
-    - requirements: docs/requirements.txt
-    - method: pip
-      path: .
+    install:
+        - requirements: docs/requirements.txt
+        - method: pip
+          path: .

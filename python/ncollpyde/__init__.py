@@ -11,7 +11,7 @@ from .main import DEFAULT_THREADS  # noqa: F401
 from .main import INDEX  # noqa: F401
 from .main import N_CPUS  # noqa: F401
 from .main import PRECISION  # noqa: F401
-from .main import Volume  # noqa: F401
+from .main import Volume, Validation
 from .main import configure_threadpool  # noqa: F401
 from ._ncollpyde import n_threads  # noqa: F401
 from ._ncollpyde import _version
@@ -19,4 +19,4 @@ from ._ncollpyde import _version
 __version__ = _version()
 __version_info__ = tuple(int(n) for n in __version__.split("-")[0].split("."))
 
-__all__ = ["Volume"]
+__all__ = ["Volume", "Validation"]

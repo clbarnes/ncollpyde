@@ -3,17 +3,16 @@
 
 """Tests for `ncollpyde` package."""
 from itertools import product
+from math import pi, sqrt
 import sys
 import subprocess as sp
 import logging
+from ncollpyde.main import points_around_vol
 
 import numpy as np
 import pytest
 
-try:
-    import trimesh
-except ImportError:
-    trimesh = None
+import trimesh
 
 from ncollpyde import PRECISION, Volume, configure_threadpool
 
@@ -51,50 +50,51 @@ def test_many(mesh, threads):
     assert np.array_equal(vol.contains(points, threads=threads), expected)
 
 
-def test_0_rays(mesh):
-    vol = Volume.from_meshio(mesh, n_rays=0)
-    points = [p for p, _ in points_expected]
-    assert np.array_equal(vol.contains(points), [False] * len(points))
+def test_contains_results(volume: Volume):
+    pts = points_around_vol(volume, 1000, 0.1)
+    ray = volume.contains(pts, n_rays=3, consensus=3, threads=False)
+    psnorms = volume.contains(pts, n_rays=-1, threads=False)
+    assert np.allclose(ray, psnorms)
 
 
-def test_no_validation(mesh):
-    triangles = mesh.cells_dict["triangle"]
-    Volume(mesh.points, triangles, True)
+# def test_no_validation(mesh):
+#     triangles = mesh.cells_dict["triangle"]
+#     Volume(mesh.points, triangles, True)
 
 
-@pytest.mark.skipif(not trimesh, reason="Requires trimesh")
-def test_can_repair_hole(mesh):
-    triangles = mesh.cells_dict["triangle"]
-    triangles = triangles[:-1]
-    Volume(mesh.points, triangles, True)
+# @pytest.mark.skipif(not trimesh, reason="Requires trimesh")
+# def test_can_repair_hole(mesh):
+#     triangles = mesh.cells_dict["triangle"]
+#     triangles = triangles[:-1]
+#     Volume(mesh.points, triangles, True)
 
 
-@pytest.mark.skipif(not trimesh, reason="Requires trimesh")
-def test_can_repair_inversion(mesh):
-    triangles = mesh.cells_dict["triangle"]
-    triangles[-1] = triangles[-1, ::-1]
-    Volume(mesh.points, triangles, True)
+# @pytest.mark.skipif(not trimesh, reason="Requires trimesh")
+# def test_can_repair_inversion(mesh):
+#     triangles = mesh.cells_dict["triangle"]
+#     triangles[-1] = triangles[-1, ::-1]
+#     Volume(mesh.points, triangles, True)
 
 
-@pytest.mark.skipif(not trimesh, reason="Requires trimesh")
-def test_can_repair_inversions(mesh):
-    triangles = mesh.cells_dict["triangle"]
-    triangles = triangles[:, ::-1]
-    Volume(mesh.points, triangles, True)
+# @pytest.mark.skipif(not trimesh, reason="Requires trimesh")
+# def test_can_repair_inversions(mesh):
+#     triangles = mesh.cells_dict["triangle"]
+#     triangles = triangles[:, ::-1]
+#     Volume(mesh.points, triangles, True)
 
 
-@pytest.mark.skipif(not trimesh, reason="Requires trimesh")
-def test_inversions_repaired(simple_mesh):
-    center = [0.5, 0.5, 0.5]
+# @pytest.mark.skipif(not trimesh, reason="Requires trimesh")
+# def test_inversions_repaired(simple_mesh):
+#     center = [0.5, 0.5, 0.5]
 
-    orig_points = simple_mesh.points
-    orig_triangles = simple_mesh.cells_dict["triangle"]
-    assert center in Volume(orig_points, orig_triangles)
+#     orig_points = simple_mesh.points
+#     orig_triangles = simple_mesh.cells_dict["triangle"]
+#     assert center in Volume(orig_points, orig_triangles)
 
-    inv_triangles = orig_triangles[:, ::-1]
-    assert center not in Volume(orig_points, inv_triangles)
+#     inv_triangles = orig_triangles[:, ::-1]
+#     assert center not in Volume(orig_points, inv_triangles)
 
-    assert center in Volume(orig_points, inv_triangles, validate=True)
+#     assert center in Volume(orig_points, inv_triangles, validate=True)
 
 
 def test_points(mesh):
@@ -235,7 +235,7 @@ def test_intersections_threads(simple_volume, threads):
         [1.5, 0.5, 1.5],
     ]
 
-    idxs, _, _ = simple_volume.intersections(sources, targets, threads)
+    idxs, _, _ = simple_volume.intersections(sources, targets, threads=threads)
     assert len(idxs) == 1
     assert idxs[0] == 1
 
@@ -283,7 +283,7 @@ def test_near_miss(simple_volume: Volume, steps, angle):
         ([0.5, 0.5, 0.5], -0.5),
     ],
 )
-def test_distance_unsigned(simple_volume, point, expected, signed):
+def test_distance(simple_volume, point, expected, signed):
     if not signed:
         expected = np.abs(expected)
     assert np.allclose(
@@ -314,3 +314,35 @@ def test_configure_threadpool_twice():
     with pytest.raises(RuntimeError):
         configure_threadpool(3, "prefix")
         configure_threadpool(3, "prefix")
+
+
+@pytest.mark.parametrize(
+    ["point", "vec", "exp_dist", "exp_dot"],
+    [
+        ([0.5, 0.5, 0.5], [1, 0, 0], 0.5, 1),
+        ([-0.5, 0.5, 0.5], [1, 0, 0], -0.5, 1),
+        ([0.75, 0.5, 0.5], [1, 1, 0], sqrt(2 * 0.25**2), np.cos(pi / 4)),
+    ],
+)
+def test_sdf_inner(simple_volume: Volume, point, vec, exp_dist, exp_dot):
+    dists, dots = simple_volume._sdf_intersections([point], [vec])
+    assert np.allclose(dists[0], exp_dist)
+    assert np.allclose(dots[0], exp_dot)
+
+
+def assert_intersection_results(test, ref):
+    test_dict = {idx: (tuple(pt), is_bf) for idx, pt, is_bf in zip(*test)}
+    ref_dict = {idx: (tuple(pt), is_bf) for idx, pt, is_bf in zip(*ref)}
+    assert test_dict == ref_dict
+
+
+def test_intersections_impls(volume: Volume):
+    n_edges = 1000
+    starts = points_around_vol(volume, n_edges, seed=1991)
+    stops = points_around_vol(volume, n_edges, seed=1992)
+
+    serial = volume.intersections(starts, stops, threads=False)
+    par = volume.intersections(starts, stops, threads=True)
+    assert_intersection_results(serial, par)
+    par2 = volume._impl.intersections_many_threaded(starts, stops)
+    assert_intersection_results(serial, par2)

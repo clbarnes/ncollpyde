@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 
 from ncollpyde import Volume
+from ncollpyde.main import points_around_vol
 
 SAMPLES_PER_DIM = 10
 PADDING = 0.2
@@ -15,6 +16,7 @@ CONTAINS_SERIAL = "containment serial"
 INTERSECTION_SERIAL = "intersection serial"
 CONTAINS_PARALLEL = "containment parallel"
 INTERSECTION_PARALLEL = "intersection parallel"
+INTERSECTION_PARALLEL_IMPL = "intersection parallel implementation"
 DISTANCE = "distance"
 
 
@@ -219,7 +221,7 @@ def test_trimesh_contains(trimesh_volume, sample_points, expected, benchmark):
 
 
 @pytest.mark.benchmark(group=CONTAINS_SERIAL)
-@pytest.mark.parametrize("n_rays", [0, 1, 2, 4, 8, 16])
+@pytest.mark.parametrize("n_rays", [1, 2, 4, 8, 16])
 def test_ncollpyde_contains(mesh, n_rays, sample_points, expected, benchmark):
     ncollpyde_volume = Volume.from_meshio(mesh, n_rays=n_rays)
     ncollpyde_volume.threads = False
@@ -258,6 +260,26 @@ def test_ncollpyde_intersection(mesh, benchmark, threads):
 
     vol = Volume.from_meshio(mesh, threads=threads)
     benchmark(vol.intersections, starts, stops)
+
+
+@pytest.mark.benchmark(group=INTERSECTION_PARALLEL_IMPL)
+@pytest.mark.parametrize(
+    ("method_name",),
+    [
+        ("intersections_many_threaded",),
+        # ("intersections_many_threaded2",),
+    ],
+)
+def test_ncollpyde_intersection_impls(mesh, benchmark, method_name):
+    n_edges = 1_000
+
+    vol = Volume.from_meshio(mesh, threads=True)
+
+    starts = points_around_vol(vol, n_edges, seed=1991)
+    stops = points_around_vol(vol, n_edges, seed=1992)
+
+    fn = getattr(vol._impl, method_name)
+    benchmark(fn, starts, stops)
 
 
 @pytest.mark.benchmark(group=DISTANCE)
