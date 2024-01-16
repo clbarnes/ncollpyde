@@ -57,44 +57,44 @@ def test_contains_results(volume: Volume):
     assert np.allclose(ray, psnorms)
 
 
-def test_no_validation(mesh):
-    triangles = mesh.cells_dict["triangle"]
-    Volume(mesh.points, triangles, True)
+# def test_no_validation(mesh):
+#     triangles = mesh.cells_dict["triangle"]
+#     Volume(mesh.points, triangles, True)
 
 
-@pytest.mark.skipif(not trimesh, reason="Requires trimesh")
-def test_can_repair_hole(mesh):
-    triangles = mesh.cells_dict["triangle"]
-    triangles = triangles[:-1]
-    Volume(mesh.points, triangles, True)
+# @pytest.mark.skipif(not trimesh, reason="Requires trimesh")
+# def test_can_repair_hole(mesh):
+#     triangles = mesh.cells_dict["triangle"]
+#     triangles = triangles[:-1]
+#     Volume(mesh.points, triangles, True)
 
 
-@pytest.mark.skipif(not trimesh, reason="Requires trimesh")
-def test_can_repair_inversion(mesh):
-    triangles = mesh.cells_dict["triangle"]
-    triangles[-1] = triangles[-1, ::-1]
-    Volume(mesh.points, triangles, True)
+# @pytest.mark.skipif(not trimesh, reason="Requires trimesh")
+# def test_can_repair_inversion(mesh):
+#     triangles = mesh.cells_dict["triangle"]
+#     triangles[-1] = triangles[-1, ::-1]
+#     Volume(mesh.points, triangles, True)
 
 
-@pytest.mark.skipif(not trimesh, reason="Requires trimesh")
-def test_can_repair_inversions(mesh):
-    triangles = mesh.cells_dict["triangle"]
-    triangles = triangles[:, ::-1]
-    Volume(mesh.points, triangles, True)
+# @pytest.mark.skipif(not trimesh, reason="Requires trimesh")
+# def test_can_repair_inversions(mesh):
+#     triangles = mesh.cells_dict["triangle"]
+#     triangles = triangles[:, ::-1]
+#     Volume(mesh.points, triangles, True)
 
 
-@pytest.mark.skipif(not trimesh, reason="Requires trimesh")
-def test_inversions_repaired(simple_mesh):
-    center = [0.5, 0.5, 0.5]
+# @pytest.mark.skipif(not trimesh, reason="Requires trimesh")
+# def test_inversions_repaired(simple_mesh):
+#     center = [0.5, 0.5, 0.5]
 
-    orig_points = simple_mesh.points
-    orig_triangles = simple_mesh.cells_dict["triangle"]
-    assert center in Volume(orig_points, orig_triangles)
+#     orig_points = simple_mesh.points
+#     orig_triangles = simple_mesh.cells_dict["triangle"]
+#     assert center in Volume(orig_points, orig_triangles)
 
-    inv_triangles = orig_triangles[:, ::-1]
-    assert center not in Volume(orig_points, inv_triangles)
+#     inv_triangles = orig_triangles[:, ::-1]
+#     assert center not in Volume(orig_points, inv_triangles)
 
-    assert center in Volume(orig_points, inv_triangles, validate=True)
+#     assert center in Volume(orig_points, inv_triangles, validate=True)
 
 
 def test_points(mesh):

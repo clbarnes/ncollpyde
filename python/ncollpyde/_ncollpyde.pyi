@@ -14,7 +14,12 @@ Indices = npt.NDArray[np.uint32]
 
 class TriMeshWrapper:
     def __init__(
-        self, points: Points, indices: Indices, n_rays: int, ray_seed: int
+        self,
+        points: Points,
+        indices: Indices,
+        n_rays: int,
+        ray_seed: int,
+        validate: int,
     ): ...
     def contains(
         self, points: Points, n_rays: int, consensus: int, parallel: bool

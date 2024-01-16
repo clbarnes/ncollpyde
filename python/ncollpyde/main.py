@@ -3,6 +3,7 @@ import random
 import warnings
 from multiprocessing import cpu_count
 from typing import TYPE_CHECKING, Optional, Tuple, Union, List
+from enum import IntFlag, auto
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
@@ -27,6 +28,41 @@ DEFAULT_SEED = 1991
 
 PRECISION = np.dtype(_precision())
 INDEX = np.dtype(_index())
+
+
+class Validation(IntFlag):
+    """Enum representing the different validations which can be applied.
+
+    Combine with `|`.
+    Must contain ORIENTED (see `Validation.minimum()`).
+    """
+    HALF_EDGE_TOPOLOGY = 1
+    CONNECTED_COMPONENTS = 2
+    DELETE_BAD_TOPOLOGY_TRIANGLES = 4
+    ORIENTED = 8
+    MERGE_DUPLICATE_VERTICES = 16
+    MERGE_DEGENERATE_TRIANGLES = 32
+    MERGE_DUPLICATE_TRIANGLES = 64
+
+    @classmethod
+    def minimum(cls):
+        return cls.ORIENTED
+
+    @classmethod
+    def default(cls):
+        return cls.all()
+
+    @classmethod
+    def all(cls):
+        return (
+            cls.HALF_EDGE_TOPOLOGY
+            | cls.CONNECTED_COMPONENTS
+            | cls.DELETE_BAD_TOPOLOGY_TRIANGLES
+            | cls.ORIENTED
+            | cls.MERGE_DUPLICATE_VERTICES
+            | cls.MERGE_DEGENERATE_TRIANGLES
+            | cls.MERGE_DUPLICATE_TRIANGLES
+        )
 
 
 def configure_threadpool(n_threads: Optional[int], name_prefix: Optional[str]):
@@ -85,7 +121,7 @@ class Volume:
         self,
         vertices: ArrayLike,
         triangles: ArrayLike,
-        validate=False,
+        validate: Validation = Validation.default(),
         threads: Optional[bool] = None,
         n_rays=DEFAULT_RAYS,
         ray_seed=DEFAULT_SEED,
@@ -114,10 +150,24 @@ class Volume:
         """
         vert = np.asarray(vertices, self.dtype)
         if len(vert) > np.iinfo(INDEX).max:
-            raise ValueError(f"Cannot represent {len(vert)} vertices with {INDEX}")
+            raise ValueError(
+                f"Cannot represent {len(vert)} vertices with {INDEX}"
+            )
         tri = np.asarray(triangles, INDEX)
-        if validate:
-            vert, tri = self._validate(vert, tri)
+        if isinstance(validate, bool):
+            warnings.warn(
+                "`validate: bool` should be replaced by a Validation enum "
+                "controlling validation by this library. "
+                "The previous behaviour of validating using the "
+                "external trimesh library may be removed in future.",
+                DeprecationWarning,
+            )
+            if validate:
+                vert, tri = self._validate(vert, tri)
+                validate = Validation.all()
+            else:
+                validate = Validation.minimum()
+
         self.threads = self._interpret_threads(threads)
         if ray_seed is None:
             logger.warning(
@@ -129,7 +179,7 @@ class Volume:
         self.n_rays = int(n_rays)
         inner_rays = 0 if self.n_rays < 0 else self.n_rays
 
-        self._impl = TriMeshWrapper(vert, tri, inner_rays, ray_seed)
+        self._impl = TriMeshWrapper(vert, tri, inner_rays, ray_seed, validate)
 
     def _validate(
         self, vertices: np.ndarray, triangles: np.ndarray
@@ -358,7 +408,7 @@ class Volume:
     def from_meshio(
         cls,
         mesh: "meshio.Mesh",
-        validate=False,
+        validate: Validation = Validation.default(),
         threads=None,
         n_rays=DEFAULT_RAYS,
         ray_seed=DEFAULT_SEED,
@@ -367,7 +417,7 @@ class Volume:
         Convenience function for instantiating a Volume from a meshio Mesh.
 
         :param mesh: meshio Mesh whose only cells are triangles.
-        :param validate: as passed to ``__init__``, defaults to False
+        :param validate: as passed to ``__init__``, defaults to Validation.default()
         :param threads: as passed to ``__init__``, defaults to None
         :param n_rays: as passed to ``__init__``, defaults to 3
         :param ray_seed: as passed to ``__init__``, defaults to None (random)

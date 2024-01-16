@@ -4,7 +4,7 @@ use ndarray::{Array2, ArrayView1};
 use numpy::ndarray::{Array, Zip};
 use numpy::{IntoPyArray, PyArray1, PyArray2, PyReadonlyArray2};
 use parry3d_f64::math::{Point, Vector};
-use parry3d_f64::shape::TriMesh;
+use parry3d_f64::shape::{TriMesh, TriMeshFlags};
 use pyo3::exceptions::{PyRuntimeError, PyValueError};
 use pyo3::prelude::*;
 use rand::SeedableRng;
@@ -13,7 +13,7 @@ use rayon::{prelude::*, ThreadPoolBuilder};
 
 use crate::utils::{
     aabb_diag, dist_from_mesh, mesh_contains_point, mesh_contains_point_oriented,
-    points_cross_mesh, random_dir, sdf_inner, Precision, FLAGS,
+    points_cross_mesh, random_dir, sdf_inner, Precision,
 };
 
 // fn vec_to_point<T: 'static + Debug + PartialEq + Copy>(v: Vec<T>) -> Point<T> {
@@ -38,6 +38,7 @@ impl TriMeshWrapper {
         indices: PyReadonlyArray2<u32>,
         n_rays: usize,
         ray_seed: u64,
+        validate: u8,
     ) -> PyResult<Self> {
         let points2 = points
             .as_array()
@@ -53,7 +54,14 @@ impl TriMeshWrapper {
             .collect();
         let mut mesh = TriMesh::new(points2, indices2);
 
-        mesh.set_flags(FLAGS)
+        let flags = TriMeshFlags::from_bits(validate)
+            .ok_or(PyValueError::new_err("Invalid `validate` enum"))?;
+        if !flags.contains(TriMeshFlags::ORIENTED) {
+            return Err(PyValueError::new_err(
+                "`validate` enum must contain ORIENTED",
+            ));
+        }
+        mesh.set_flags(flags)
             .map_err(|e| PyValueError::new_err(format!("Invalid mesh topology: {e}")))?;
 
         if n_rays > 0 {
