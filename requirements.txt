@@ -16,7 +16,7 @@ pytest-benchmark==4.0.0
 
 # develop
 pip
-black==23.3.0
+black==24.3.0
 watchdog==3.0.0
 ruff
 coverage==7.2.2
