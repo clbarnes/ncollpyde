@@ -5,7 +5,11 @@ edition = "2018"
 
 [dependencies]
 pyo3 = { version = "0.27", features = ["extension-module", "abi3-py39"] }
-parry3d-f64 = { version = "0.25.3", features = ["dim3", "f64", "enhanced-determinism"] }
+parry3d-f64 = { version = "0.25.3", features = [
+  "dim3",
+  "f64",
+  "enhanced-determinism",
+] }
 rayon = "1.7"
 rand = "0.8"
 rand_pcg = "0.3.1"

@@ -120,6 +120,7 @@ mod tests {
                 })
                 .collect(),
         )
+        .expect("trimesh should be valid")
     }
 
     fn cube() -> TriMesh {
