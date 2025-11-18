@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """Tests for `ncollpyde` package."""
+
 from itertools import product
 import sys
 import subprocess as sp

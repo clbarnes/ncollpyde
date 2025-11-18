@@ -8,7 +8,7 @@ use parry3d_f64::shape::TriMesh;
 use pyo3::prelude::*;
 use rand::SeedableRng;
 use rand_pcg::Pcg64Mcg;
-use rayon::{prelude::*};
+use rayon::prelude::*;
 
 use crate::utils::{dist_from_mesh, mesh_contains_point, points_cross_mesh, random_dir, Precision};
 
@@ -107,7 +107,7 @@ impl TriMeshWrapper {
         py: Python<'py>,
         points: PyReadonlyArray2<Precision>,
         parallel: bool,
-    ) -> Bound<'py , PyArray1<bool>> {
+    ) -> Bound<'py, PyArray1<bool>> {
         if parallel {
             Zip::from(points.as_array().rows())
                 .par_map_collect(|r| {
@@ -222,12 +222,12 @@ impl TriMeshWrapper {
 #[pymodule]
 #[pyo3(name = "_ncollpyde")]
 pub mod ncollpyde {
-    use pyo3::prelude::*;
     use pyo3::exceptions::PyRuntimeError;
+    use pyo3::prelude::*;
     use rayon::ThreadPoolBuilder;
 
-   #[pymodule_export]
-   use super::TriMeshWrapper;
+    #[pymodule_export]
+    use super::TriMeshWrapper;
 
     #[pyfunction(name = "_precision")]
     pub fn precision_py(_py: Python) -> &'static str {
@@ -267,5 +267,3 @@ pub mod ncollpyde {
             .map_err(|e| PyRuntimeError::new_err(format!("Error building threadpool: {e}")))
     }
 }
-
-
