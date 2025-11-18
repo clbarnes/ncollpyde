@@ -35,6 +35,7 @@ dev = [
     # lints
     "ruff",
     "mypy",
+    "typed-ast",
     # test dependencies
     "meshio",
     "pytest",
