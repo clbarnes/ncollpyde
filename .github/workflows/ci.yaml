@@ -7,7 +7,7 @@ defaults:
 jobs:
 
   lint-rust:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
       - uses: actions-rs/toolchain@v1
@@ -24,7 +24,7 @@ jobs:
       - run: make lint-rust
 
   lint-python:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -34,7 +34,7 @@ jobs:
       - run: make lint-python
 
   test-rust:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
       - uses: actions-rs/toolchain@v1
@@ -53,7 +53,7 @@ jobs:
           - '3.12'
           - '3.13'
           - '3.14'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
       - uses: actions-rs/toolchain@v1
@@ -87,7 +87,7 @@ jobs:
   deploy:
     strategy:
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-22.04]
+        os: [macos-latest, windows-latest, ubuntu-24.04]
     needs: [lint-rust, lint-python, test-rust, test-python]
     runs-on: ${{ matrix.os }}
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/v')

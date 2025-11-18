@@ -119,7 +119,7 @@ mod tests {
                     ]
                 })
                 .collect(),
-        )
+        ).expect("mesh should be valid")
     }
 
     fn cube() -> TriMesh {
@@ -141,6 +141,8 @@ mod tests {
         assert!(cube().contains_point(&Isometry::identity(), &Point::new(0.5, 0.5, 0.0)))
     }
 
+    /// Assert that a ray from point `p` in the direction `v`
+    /// either is or is not inside the unit cube.
     fn assert_ray(p: [Precision; 3], v: [Precision; 3], is_inside: bool) {
         let mesh = cube();
         let actual = mesh_contains_point_ray(
@@ -203,13 +205,11 @@ mod tests {
         assert_ray([-0.5, -0.5, -0.5], [10.0, 10.0, 10.0], false);
     }
 
-    #[ignore]
     #[test]
     fn outside_touch_edge() {
         assert_ray([-0.5, 0.5, 0.5], [1.0, 1.0, 0.0], false);
     }
 
-    #[ignore]
     #[test]
     fn outside_touch_corner() {
         assert_ray([-0.5, 0.5, 0.5], [1.0, 1.0, 1.0], false);
