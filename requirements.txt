@@ -20,7 +20,6 @@ watchdog==3.0.0
 ruff
 coverage==7.2.2
 mypy==1.18.2
-typed-ast
 
 # docs
 -r docs/requirements.txt
