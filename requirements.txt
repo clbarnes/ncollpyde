@@ -1,8 +1,8 @@
 # build
-maturin==0.14.16
+maturin==1.10.1
 
 # run
-numpy==1.24.2
+numpy==2.0.2
 trimesh[easy]==3.21.2
 
 # test
@@ -16,7 +16,6 @@ pytest-benchmark==4.0.0
 
 # develop
 pip
-black==23.3.0
 watchdog==3.0.0
 ruff
 coverage==7.2.2

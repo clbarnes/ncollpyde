@@ -7,9 +7,9 @@ pub type Precision = f64;
 
 pub fn random_dir<R: Rng>(rng: &mut R, length: Precision) -> Vector<Precision> {
     let unscaled: Vector<Precision> = [
-        rng.gen::<Precision>() - 0.5,
-        rng.gen::<Precision>() - 0.5,
-        rng.gen::<Precision>() - 0.5,
+        rng.random::<Precision>() - 0.5,
+        rng.random::<Precision>() - 0.5,
+        rng.random::<Precision>() - 0.5,
     ]
     .into();
     unscaled.normalize() * length
