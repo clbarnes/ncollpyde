@@ -35,6 +35,7 @@ jobs:
 
   test-rust:
     strategy:
+      fail-fast: false
       matrix:
         rust-version: [stable, beta, nightly]
         os: [ubuntu-latest, windows-latest, macos-latest]
