@@ -34,12 +34,16 @@ jobs:
       - run: make lint-python
 
   test-rust:
-    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        rust-version: [stable, beta, nightly]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: ${{ matrix.rust-version }}
       - uses: Swatinem/rust-cache@v2
       - run: cargo test
 
