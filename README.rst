@@ -14,10 +14,6 @@ ncollpyde
     :target: https://ncollpyde.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
-.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
-    :target: https://github.com/ambv/black
-
-
 A python library for spatial queries of points and line segments with meshes.
 ncollpyde wraps around a subset of the parry rust library (formerly its predecessor ncollide).
 
