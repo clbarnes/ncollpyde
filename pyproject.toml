@@ -27,7 +27,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-validate = ["trimesh[easy]>=3.7.7"]
+validate = ["trimesh[easy]>=4.0"]
 # should be specified as dependency-groups,
 # but maturin doesn't support them yet
 # https://github.com/PyO3/maturin/issues/2737

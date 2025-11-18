@@ -12,6 +12,10 @@ use rayon::prelude::*;
 
 use crate::utils::{dist_from_mesh, mesh_contains_point, points_cross_mesh, random_dir, Precision};
 
+type OutIndices<'py> = Bound<'py, PyArray1<u64>>;
+type OutPoints<'py> = Bound<'py, PyArray2<Precision>>;
+type OutBools<'py> = Bound<'py, PyArray1<bool>>;
+
 fn vec_to_point<T: 'static + Debug + PartialEq + Copy>(v: Vec<T>) -> Point<T> {
     Point::new(v[0], v[1], v[2])
 }
@@ -161,11 +165,7 @@ impl TriMeshWrapper {
         py: Python<'py>,
         src_points: PyReadonlyArray2<Precision>,
         tgt_points: PyReadonlyArray2<Precision>,
-    ) -> (
-        Bound<'py, PyArray1<u64>>,
-        Bound<'py, PyArray2<Precision>>,
-        Bound<'py, PyArray1<bool>>,
-    ) {
+    ) -> (OutIndices<'py>, OutPoints<'py>, OutBools<'py>) {
         let mut idxs = Vec::default();
         let mut intersections = Vec::default();
         let mut is_backface = Vec::default();

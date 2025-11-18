@@ -3,10 +3,10 @@ maturin==1.10.1
 
 # run
 numpy==2.0.2
-trimesh[easy]==3.21.2
+trimesh[easy]==4.9.0
 
 # test
-meshio==5.3.4
+meshio==5.3.5
 pytest==7.2.2
 pytest-runner==6.0.0
 

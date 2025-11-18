@@ -54,13 +54,13 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr .pytest_cache
 
 fmt:
-	ruff check --fix-only $(PY_PATHS) \
-	&& black $(PY_PATHS)
+	ruff check --fix-only $(PY_PATHS) && \
+	ruff format $(PY_PATHS)
 	cargo fmt
 
 lint-python:
-	black --check $(PY_PATHS)
 	ruff check $(PY_PATHS)
+	ruff format --check $(PY_PATHS)
 	mypy $(PY_PATHS)
 
 lint-rust:
