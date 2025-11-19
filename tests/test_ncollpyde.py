@@ -111,10 +111,10 @@ def test_points(mesh):
 def test_triangles(mesh):
     points = mesh.points
     triangles = mesh.cells_dict["triangle"]
-    expected = trimesh.Trimesh(points, triangles)
+    expected = trimesh.Trimesh(points, triangles)  # type: ignore
 
     vol = Volume(mesh.points, triangles)
-    actual = trimesh.Trimesh(vol.points, vol.faces)
+    actual = trimesh.Trimesh(vol.points, vol.faces)  # type: ignore
 
     assert expected.volume == actual.volume
 

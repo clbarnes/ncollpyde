@@ -10,7 +10,7 @@ use rand::SeedableRng;
 use rand_pcg::Pcg64Mcg;
 use rayon::prelude::*;
 
-use crate::utils::{dist_from_mesh, mesh_contains_point, points_cross_mesh, random_dir, Precision};
+use crate::utils::{Precision, count_internal_rays, dist_from_mesh, mesh_contains_point, points_cross_mesh, random_dir};
 
 type OutIndices<'py> = Bound<'py, PyArray1<u64>>;
 type OutPoints<'py> = Bound<'py, PyArray2<Precision>>;
@@ -133,6 +133,35 @@ impl TriMeshWrapper {
                 })
                 .into_pyarray(py)
         }
+    }
+
+    /// Count the number of rays which report hitting a backface.
+    pub fn contains_consensus<'py>(
+        &self,
+        py: Python<'py>,
+        points: PyReadonlyArray2<Precision>,
+        parallel: bool,
+    ) -> Bound<'py, PyArray1<u32>> {
+        let pts = points.as_array();
+        let zip = Zip::from(pts.rows());
+        let arr = if parallel {
+            zip.par_map_collect(|r| {
+                count_internal_rays(
+                    &self.mesh,
+                    &Point::new(r[0], r[1], r[2]),
+                    &self.ray_directions,
+                ) as u32
+            })
+        } else {
+            zip.map_collect(|r| {
+                count_internal_rays(
+                    &self.mesh,
+                    &Point::new(r[0], r[1], r[2]),
+                    &self.ray_directions,
+                ) as u32
+            })
+        };
+        arr.into_pyarray(py)
     }
 
     pub fn points<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray2<Precision>> {

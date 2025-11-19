@@ -218,6 +218,25 @@ class Volume:
 
         return self._impl.contains(coords, self._interpret_threads(threads))
 
+    def contains_consensus(
+        self, coords: ArrayLike, threads: Optional[bool] = None
+    ) -> NDArray[np.uint32]:
+        """Count the number of rays cast which report hitting a backface.
+
+        This is mainly for debugging.
+
+        :param coords:
+        :param threads: None,
+            Whether to parallelise the queries. If ``None`` (default),
+            refer to the instance's ``threads`` attribute.
+        :return: np.ndarray of u32 counts
+        """
+        coords = np.asarray(coords, self.dtype)
+        if coords.shape[1:] != (3,):
+            raise ValueError("Coords is not a Nx3 array-like")
+
+        return self._impl.contains_consensus(coords, self._interpret_threads(threads))
+
     def intersections(
         self,
         src_points: ArrayLike,
