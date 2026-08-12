@@ -1,5 +1,3 @@
-from typing import TypeAlias
-
 import numpy as np
 import numpy.typing as npt
 
@@ -9,8 +7,8 @@ def _version() -> str: ...
 def n_threads() -> int: ...
 def _configure_threadpool(n_threads: int | None, name_prefix: str | None): ...
 
-Points: TypeAlias = npt.NDArray[np.float64]
-Indices: TypeAlias = npt.NDArray[np.uint32]
+type Points = npt.NDArray[np.float64]
+type Indices = npt.NDArray[np.uint32]
 
 class TriMeshWrapper:
     def __init__(
