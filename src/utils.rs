@@ -1,12 +1,12 @@
-use parry3d_f64::math::{Isometry, Point, Vector};
+use parry3d_f64::math::{Pose, Vector};
 use parry3d_f64::query::{PointQuery, Ray, RayCast};
 use parry3d_f64::shape::TriMesh;
 use rand::Rng;
 
 pub type Precision = f64;
 
-pub fn random_dir<R: Rng>(rng: &mut R, length: Precision) -> Vector<Precision> {
-    let unscaled: Vector<Precision> = [
+pub fn random_dir<R: Rng>(rng: &mut R, length: Precision) -> Vector {
+    let unscaled: Vector = [
         rng.random::<Precision>() - 0.5,
         rng.random::<Precision>() - 0.5,
         rng.random::<Precision>() - 0.5,
@@ -15,11 +15,7 @@ pub fn random_dir<R: Rng>(rng: &mut R, length: Precision) -> Vector<Precision> {
     unscaled.normalize() * length
 }
 
-pub fn mesh_contains_point_ray(
-    mesh: &TriMesh,
-    point: &Point<f64>,
-    ray_direction: &Vector<f64>,
-) -> bool {
+pub fn mesh_contains_point_ray(mesh: &TriMesh, point: &Vector, ray_direction: &Vector) -> bool {
     let intersection_opt = mesh.cast_local_ray_and_get_normal(
         &Ray::new(*point, *ray_direction),
         1.0,
@@ -33,17 +29,13 @@ pub fn mesh_contains_point_ray(
     }
 }
 
-pub fn mesh_contains_point(
-    mesh: &TriMesh,
-    point: &Point<f64>,
-    ray_directions: &[Vector<f64>],
-) -> bool {
-    if !mesh.local_aabb().contains_local_point(point) {
+pub fn mesh_contains_point(mesh: &TriMesh, point: &Vector, ray_directions: &[Vector]) -> bool {
+    if !mesh.local_aabb().contains_local_point(*point) {
         return false;
     }
 
     // check whether point is on boundary
-    if mesh.contains_point(&Isometry::identity(), point) {
+    if mesh.contains_point(&Pose::IDENTITY, *point) {
         return true;
     }
 
@@ -57,11 +49,7 @@ pub fn mesh_contains_point(
 }
 
 /// Count the number of rays which report hitting a backface.
-pub fn count_internal_rays(
-    mesh: &TriMesh,
-    point: &Point<f64>,
-    ray_directions: &[Vector<f64>],
-) -> usize {
+pub fn count_internal_rays(mesh: &TriMesh, point: &Vector, ray_directions: &[Vector]) -> usize {
     ray_directions
         .iter()
         .filter(|r| mesh_contains_point_ray(mesh, point, r))
@@ -70,9 +58,9 @@ pub fn count_internal_rays(
 
 pub fn points_cross_mesh(
     mesh: &TriMesh,
-    src_point: &Point<f64>,
-    tgt_point: &Point<f64>,
-) -> Option<(Point<f64>, bool)> {
+    src_point: &Vector,
+    tgt_point: &Vector,
+) -> Option<(Vector, bool)> {
     let ray = Ray::new(*src_point, tgt_point - src_point);
     mesh.cast_local_ray_and_get_normal(
         &ray, 1.0, false, // unused
@@ -80,8 +68,8 @@ pub fn points_cross_mesh(
     .map(|i| (ray.point_at(i.time_of_impact), mesh.is_backface(i.feature)))
 }
 
-pub fn dist_from_mesh(mesh: &TriMesh, point: &Point<f64>, rays: Option<&[Vector<f64>]>) -> f64 {
-    let mut dist = mesh.distance_to_point(&Isometry::identity(), point, true);
+pub fn dist_from_mesh(mesh: &TriMesh, point: &Vector, rays: Option<&[Vector]>) -> f64 {
+    let mut dist = mesh.distance_to_point(&Pose::IDENTITY, *point, true);
     if let Some(r) = rays {
         if mesh_contains_point(mesh, point, r) {
             dist = -dist;
@@ -118,7 +106,7 @@ mod tests {
             io_obj
                 .vertices
                 .iter()
-                .map(|v| Point::new(v[0] as Precision, v[1] as Precision, v[2] as Precision))
+                .map(|v| Vector::new(v[0] as Precision, v[1] as Precision, v[2] as Precision))
                 .collect(),
             io_obj
                 .faces
@@ -141,17 +129,17 @@ mod tests {
 
     #[test]
     fn corner_contains() {
-        assert!(cube().contains_point(&Isometry::identity(), &Point::new(0.0, 0.0, 0.0)))
+        assert!(cube().contains_point(&Pose::IDENTITY, Vector::new(0.0, 0.0, 0.0)))
     }
 
     #[test]
     fn edge_contains() {
-        assert!(cube().contains_point(&Isometry::identity(), &Point::new(0.5, 0.0, 0.0)))
+        assert!(cube().contains_point(&Pose::IDENTITY, Vector::new(0.5, 0.0, 0.0)))
     }
 
     #[test]
     fn face_contains() {
-        assert!(cube().contains_point(&Isometry::identity(), &Point::new(0.5, 0.5, 0.0)))
+        assert!(cube().contains_point(&Pose::IDENTITY, Vector::new(0.5, 0.5, 0.0)))
     }
 
     /// Assert that a ray from point `p` in the direction `v`
@@ -160,7 +148,7 @@ mod tests {
         let mesh = cube();
         let actual = mesh_contains_point_ray(
             &mesh,
-            &Point::new(p[0], p[1], p[2]),
+            &Vector::new(p[0], p[1], p[2]),
             &Vector::new(v[0], v[1], v[2]),
         );
         if actual != is_inside {
@@ -238,8 +226,8 @@ mod tests {
         let mesh = cube();
         points_cross_mesh(
             &mesh,
-            &Point::new(src[0], src[1], src[2]),
-            &Point::new(tgt[0], tgt[1], tgt[2]),
+            &Vector::new(src[0], src[1], src[2]),
+            &Vector::new(tgt[0], tgt[1], tgt[2]),
         )
         .map(|(p, bf)| ([p.x, p.y, p.z], bf))
     }
@@ -278,7 +266,7 @@ mod tests {
         assert!(get_cross([1.5, 1.5, 1.5], [2.0, 2.0, 2.0]).is_none());
     }
 
-    fn axis_rays() -> Vec<Vector<Precision>> {
+    fn axis_rays() -> Vec<Vector> {
         vec![
             Vector::new(1.0, 0.0, 0.0),
             Vector::new(0.0, 1.0, 0.0),
@@ -286,12 +274,7 @@ mod tests {
         ]
     }
 
-    fn assert_dist(
-        mesh: &TriMesh,
-        point: &Point<Precision>,
-        rays: Option<&[Vector<Precision>]>,
-        expected: Precision,
-    ) {
+    fn assert_dist(mesh: &TriMesh, point: &Vector, rays: Option<&[Vector]>, expected: Precision) {
         assert_eq!(dist_from_mesh(mesh, point, rays), expected)
     }
 
@@ -299,20 +282,25 @@ mod tests {
     fn distance_signed() {
         let rays = axis_rays();
         let cube = cube();
-        assert_dist(&cube, &Point::new(1.0, 1.0, 1.0), Some(&rays), 0.0);
-        assert_dist(&cube, &Point::new(0.5, 0.5, 0.5), Some(&rays), -0.5);
-        assert_dist(&cube, &Point::new(2.0, 1.0, 1.0), Some(&rays), 1.0);
+        assert_dist(&cube, &Vector::new(1.0, 1.0, 1.0), Some(&rays), 0.0);
+        assert_dist(&cube, &Vector::new(0.5, 0.5, 0.5), Some(&rays), -0.5);
+        assert_dist(&cube, &Vector::new(2.0, 1.0, 1.0), Some(&rays), 1.0);
         let three: Precision = 3.0;
-        assert_dist(&cube, &Point::new(2.0, 2.0, 2.0), Some(&rays), three.sqrt());
+        assert_dist(
+            &cube,
+            &Vector::new(2.0, 2.0, 2.0),
+            Some(&rays),
+            three.sqrt(),
+        );
     }
 
     #[test]
     fn distance_unsigned() {
         let cube = cube();
-        assert_dist(&cube, &Point::new(1.0, 1.0, 1.0), None, 0.0);
-        assert_dist(&cube, &Point::new(0.5, 0.5, 0.5), None, 0.5);
-        assert_dist(&cube, &Point::new(2.0, 1.0, 1.0), None, 1.0);
+        assert_dist(&cube, &Vector::new(1.0, 1.0, 1.0), None, 0.0);
+        assert_dist(&cube, &Vector::new(0.5, 0.5, 0.5), None, 0.5);
+        assert_dist(&cube, &Vector::new(2.0, 1.0, 1.0), None, 1.0);
         let three: Precision = 3.0;
-        assert_dist(&cube, &Point::new(2.0, 2.0, 2.0), None, three.sqrt());
+        assert_dist(&cube, &Vector::new(2.0, 2.0, 2.0), None, three.sqrt());
     }
 }

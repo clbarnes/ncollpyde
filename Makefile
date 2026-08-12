@@ -77,8 +77,13 @@ test-python: install-dev
 
 test: test-rust test-python
 
-bench: install-opt
+bench-rust:
+	cargo bench
+
+bench-python: install-opt
 	uv run --all-extras pytest -v --benchmark-only
+
+bench: bench-rust bench-python
 
 sync:
 	uv sync --all-extras --all-groups
