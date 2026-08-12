@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 use std::iter::repeat_with;
 
-use ndarray::{Array, Zip, parallel::prelude::*};
+use ndarray::{parallel::prelude::*, Array, Zip};
 use numpy::{IntoPyArray, PyArray1, PyArray2, PyReadonlyArray2};
 use parry3d_f64::math::{Point, Vector};
 use parry3d_f64::shape::TriMesh;
@@ -10,7 +10,10 @@ use rand::SeedableRng;
 use rand_pcg::Pcg64Mcg;
 // use rayon::prelude::*;
 
-use crate::utils::{Precision, count_internal_rays, dist_from_mesh, mesh_contains_point, points_cross_mesh, random_dir};
+use crate::utils::{
+    count_internal_rays, dist_from_mesh, mesh_contains_point, points_cross_mesh, random_dir,
+    Precision,
+};
 
 type OutIndices<'py> = Bound<'py, PyArray1<u64>>;
 type OutPoints<'py> = Bound<'py, PyArray2<Precision>>;

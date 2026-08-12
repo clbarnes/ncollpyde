@@ -57,8 +57,15 @@ pub fn mesh_contains_point(
 }
 
 /// Count the number of rays which report hitting a backface.
-pub fn count_internal_rays(mesh: &TriMesh, point: &Point<f64>, ray_directions: &[Vector<f64>]) -> usize {
-    ray_directions.iter().filter(|r| mesh_contains_point_ray(mesh, point, r)).count()
+pub fn count_internal_rays(
+    mesh: &TriMesh,
+    point: &Point<f64>,
+    ray_directions: &[Vector<f64>],
+) -> usize {
+    ray_directions
+        .iter()
+        .filter(|r| mesh_contains_point_ray(mesh, point, r))
+        .count()
 }
 
 pub fn points_cross_mesh(
