@@ -31,14 +31,17 @@ validate = ["trimesh[easy]>=4.0"]
 # should be specified as dependency-groups,
 # but maturin doesn't support them yet
 # https://github.com/PyO3/maturin/issues/2737
+
+[dependency-groups]
+lint = ["ruff", "mypy"]
+test = ["meshio", "pytest", "pytest-benchmark"]
+doc = ["Sphinx==6.1.3", "sphinx-rtd-theme"]
 dev = [
-    # lints
-    "ruff",
-    "mypy",
-    # test dependencies
-    "meshio",
-    "pytest",
-    "pytest-benchmark",
+    "maturin==1.14.1",
+    "maturin-import-hook",
+    {include-group = "lint"},
+    {include-group = "test"},
+    {include-group = "doc"},
 ]
 
 [project.urls]
@@ -62,3 +65,14 @@ python_version = "3.10"
 [tool.ruff]
 extend-exclude = ["docs"]
 target-version = "py310"
+
+[tool.uv]
+package = false
+
+# This would allow uv to rebuild the rust package as part of `uv sync`,
+# but does so in --release mode (not good for dev/ CI)
+# cache-keys = [{file = "pyproject.toml"}, {file = "Cargo.toml"}, {file = "**/*.rs"}]
+
+# This would allow uv to rebuild the rust package in --dev mode,
+# but would probably use --dev when doing `uv publish` too.
+# config-settings = { build-args = "--profile=dev" }

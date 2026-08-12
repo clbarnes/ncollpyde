@@ -80,11 +80,15 @@ test: test-rust test-python
 bench: install-opt
 	pytest -v --benchmark-only
 
-install-dev:
-	maturin develop
+sync:
+	uv sync --all-extras --all-groups
 
-install-opt:
-	maturin develop --release
+install-dev: sync
+	python -m maturin_import_hook site install
+	maturin develop --uv --group dev --extras validate
+
+install-opt: sync
+	maturin develop --release --uv --extras validate
 
 coverage: install-dev
 	coverage run --source python/ncollpyde -m pytest && \
