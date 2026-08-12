@@ -95,7 +95,7 @@ class Volume:
         n_rays=DEFAULT_RAYS,
         ray_seed=DEFAULT_SEED,
     ):
-        f"""
+        """
         Create a volume described by a triangular mesh with N vertices and M triangles.
 
         :param vertices: Nx3 array-like of floats, coordinates of triangle corners
@@ -106,7 +106,7 @@ class Volume:
             winding, and repairs made if possible.
             Otherwise, only very basic checks are made.
         :param threads: optional bool, whether to parallelise queries.
-        :param n_rays: int (default {DEFAULT_RAYS}), rays used to check containment.
+        :param n_rays: int (default 3), rays used to check containment.
             The underlying library sometimes reports false positives:
             casting multiple rays drastically reduces the chances of this.
             As the bug only affects ray casts and only produces false positives,
@@ -114,7 +114,7 @@ class Volume:
                 - the point is not in the bounding box
                 - the point is on the hull
                 - one ray reports that the point is external.
-        :param ray_seed: int >=0 (default {DEFAULT_SEED}), used for generating rays.
+        :param ray_seed: int >=0 (default 1991), used for generating rays.
             If None, use a random seed.
         """
         vert = np.asarray(vertices, self.dtype)
