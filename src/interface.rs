@@ -1,14 +1,14 @@
 use std::fmt::Debug;
 use std::iter::repeat_with;
 
-use numpy::ndarray::{Array, Zip};
+use ndarray::{Array, Zip, parallel::prelude::*};
 use numpy::{IntoPyArray, PyArray1, PyArray2, PyReadonlyArray2};
 use parry3d_f64::math::{Point, Vector};
 use parry3d_f64::shape::TriMesh;
 use pyo3::prelude::*;
 use rand::SeedableRng;
 use rand_pcg::Pcg64Mcg;
-use rayon::prelude::*;
+// use rayon::prelude::*;
 
 use crate::utils::{Precision, count_internal_rays, dist_from_mesh, mesh_contains_point, points_cross_mesh, random_dir};
 
@@ -203,7 +203,7 @@ impl TriMeshWrapper {
             .as_array()
             .rows()
             .into_iter()
-            .zip(tgt_points.as_array().rows().into_iter())
+            .zip(tgt_points.as_array().rows())
             .zip(0_u64..)
             .filter_map(|((src, tgt), i)| {
                 points_cross_mesh(

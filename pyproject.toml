@@ -47,7 +47,7 @@ documentation = "https://ncollpyde.readthedocs.io/"
 repository = "https://github.com/clbarnes/ncollpyde/"
 
 [build-system]
-requires = ["maturin==1.10.1", "numpy>=2"]
+requires = ["maturin==1.14.1", "numpy>=2"]
 build-backend = "maturin"
 
 [tool.maturin]
