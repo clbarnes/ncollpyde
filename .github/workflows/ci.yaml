@@ -5,7 +5,6 @@ defaults:
     shell: bash
 
 jobs:
-
   lint-rust:
     runs-on: ubuntu-24.04
     steps:
@@ -14,22 +13,16 @@ jobs:
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
-      - uses: actions/cache@v6
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
       - run: make lint-rust
 
   lint-python:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
-          python-version: '3.10'
-      - run: pip install $(grep -E '^(ruff|mypy|numpy)' requirements.txt)
+          cache: "pip"
+          python-version: "3.10"
       - run: make lint-python
 
   test-rust:
@@ -44,9 +37,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust-version }}
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
-          python-version: '3.10'
+          cache: "pip"
+          python-version: "3.10"
       - uses: Swatinem/rust-cache@v2
       - run: cargo test
 
@@ -55,29 +49,23 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          - '3.10'
-          - '3.11'
-          - '3.12'
-          - '3.13'
-          - '3.14'
+          - "3.10"
+          - "3.11"
+          - "3.12"
+          - "3.13"
+          - "3.14"
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
+          cache: "pip"
           python-version: ${{ matrix.python-version }}
-      - uses: actions/cache@v6
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
       - run: |
           sudo apt-get install libspatialindex-dev
           pip install -U pip wheel
-          pip install -r requirements.txt
         name: Install dependencies
       - run: |
           mkdir -p $TGT_DIR
@@ -99,9 +87,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
-          python-version: '3.13'
+          cache: "pip"
+          python-version: "3.13"
       - uses: PyO3/maturin-action@v1
         with:
           manylinux: auto
