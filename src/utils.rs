@@ -15,11 +15,7 @@ pub fn random_dir<R: Rng>(rng: &mut R, length: Precision) -> Vector {
     unscaled.normalize() * length
 }
 
-pub fn mesh_contains_point_ray(
-    mesh: &TriMesh,
-    point: &Vector,
-    ray_direction: &Vector,
-) -> bool {
+pub fn mesh_contains_point_ray(mesh: &TriMesh, point: &Vector, ray_direction: &Vector) -> bool {
     let intersection_opt = mesh.cast_local_ray_and_get_normal(
         &Ray::new(*point, *ray_direction),
         1.0,
@@ -33,11 +29,7 @@ pub fn mesh_contains_point_ray(
     }
 }
 
-pub fn mesh_contains_point(
-    mesh: &TriMesh,
-    point: &Vector,
-    ray_directions: &[Vector],
-) -> bool {
+pub fn mesh_contains_point(mesh: &TriMesh, point: &Vector, ray_directions: &[Vector]) -> bool {
     if !mesh.local_aabb().contains_local_point(*point) {
         return false;
     }
@@ -57,11 +49,7 @@ pub fn mesh_contains_point(
 }
 
 /// Count the number of rays which report hitting a backface.
-pub fn count_internal_rays(
-    mesh: &TriMesh,
-    point: &Vector,
-    ray_directions: &[Vector],
-) -> usize {
+pub fn count_internal_rays(mesh: &TriMesh, point: &Vector, ray_directions: &[Vector]) -> usize {
     ray_directions
         .iter()
         .filter(|r| mesh_contains_point_ray(mesh, point, r))
@@ -286,12 +274,7 @@ mod tests {
         ]
     }
 
-    fn assert_dist(
-        mesh: &TriMesh,
-        point: &Vector,
-        rays: Option<&[Vector]>,
-        expected: Precision,
-    ) {
+    fn assert_dist(mesh: &TriMesh, point: &Vector, rays: Option<&[Vector]>, expected: Precision) {
         assert_eq!(dist_from_mesh(mesh, point, rays), expected)
     }
 
@@ -303,7 +286,12 @@ mod tests {
         assert_dist(&cube, &Vector::new(0.5, 0.5, 0.5), Some(&rays), -0.5);
         assert_dist(&cube, &Vector::new(2.0, 1.0, 1.0), Some(&rays), 1.0);
         let three: Precision = 3.0;
-        assert_dist(&cube, &Vector::new(2.0, 2.0, 2.0), Some(&rays), three.sqrt());
+        assert_dist(
+            &cube,
+            &Vector::new(2.0, 2.0, 2.0),
+            Some(&rays),
+            three.sqrt(),
+        );
     }
 
     #[test]

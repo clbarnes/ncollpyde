@@ -2,7 +2,7 @@ use std::iter::repeat_with;
 
 use ndarray::{parallel::prelude::*, Array, Zip};
 use numpy::{IntoPyArray, PyArray1, PyArray2, PyReadonlyArray2};
-use parry3d_f64::math::{Vector};
+use parry3d_f64::math::Vector;
 use parry3d_f64::shape::TriMesh;
 use pyo3::prelude::*;
 use rand::SeedableRng;
