@@ -96,7 +96,7 @@ coverage: install-dev
 	coverage html && \
 	$(BROWSER) htmlcov/index.html
 
-docs: ## generate Sphinx HTML documentation, including API docs
+docs: install-dev ## generate Sphinx HTML documentation, including API docs
 	# rm -f docs/ncollpyde.rst && \
 	# rm -f docs/modules.rst && \
 	# sphinx-apidoc -o docs/ ncollpyde && \
