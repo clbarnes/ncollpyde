@@ -54,14 +54,14 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr .pytest_cache
 
 fmt:
-	ruff check --fix-only $(PY_PATHS) && \
-	ruff format $(PY_PATHS)
+	uv run ruff check --fix-only $(PY_PATHS) && \
+	uv run ruff format $(PY_PATHS)
 	cargo fmt
 
 lint-python:
-	ruff check $(PY_PATHS)
-	ruff format --check $(PY_PATHS)
-	mypy $(PY_PATHS)
+	uv run ruff check $(PY_PATHS)
+	uv run ruff format --check $(PY_PATHS)
+	uv run mypy $(PY_PATHS)
 
 lint-rust:
 	cargo fmt -- --check
@@ -73,22 +73,22 @@ test-rust:
 	cargo test
 
 test-python: install-dev
-	pytest -v --benchmark-skip
+	uv run --all-extras pytest -v --benchmark-skip
 
 test: test-rust test-python
 
 bench: install-opt
-	pytest -v --benchmark-only
+	uv run --all-extras pytest -v --benchmark-only
 
 sync:
 	uv sync --all-extras --all-groups
 
 install-dev: sync
-	python -m maturin_import_hook site install
-	maturin develop --uv --group dev --extras validate
+	uv run python -m maturin_import_hook site install
+	uv run maturin develop --uv --group dev --extras validate
 
 install-opt: sync
-	maturin develop --release --uv --extras validate
+	uv run maturin develop --release --uv --extras validate
 
 coverage: install-dev
 	coverage run --source python/ncollpyde -m pytest && \

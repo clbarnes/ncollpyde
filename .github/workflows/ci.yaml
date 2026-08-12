@@ -63,7 +63,7 @@ jobs:
           mkdir -p $TGT_DIR
           rm -f $TGT_DIR/*.whl
           make sync
-          maturin build --release --interpreter python --out $TGT_DIR
+          uv run maturin build --release --interpreter python --out $TGT_DIR
           uv pip install $TGT_DIR/*.whl
         name: Install package
         env:
