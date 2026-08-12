@@ -12,9 +12,12 @@ rand_pcg = "0.9.0"
 numpy = "0.29.0"
 # MUST be the same version used by numpy
 ndarray = { version = "0.16.1", features = ["rayon"] }
+log = "0.4.33"
 
 [dev-dependencies]
-stl_io = "0.10.0"
+approx = "0.5.1"
+criterion = "0.8.2"
+stl_io = "0.11"
 
 [lib]
 name = "ncollpyde"
@@ -23,3 +26,7 @@ crate-type = ["cdylib"]
 [package.metadata.release]
 disable-publish = true
 no-dev-version = true
+
+[[bench]]
+name = "containment"
+harness = false
