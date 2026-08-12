@@ -1,9 +1,8 @@
-use std::fmt::Debug;
 use std::iter::repeat_with;
 
 use ndarray::{parallel::prelude::*, Array, Zip};
 use numpy::{IntoPyArray, PyArray1, PyArray2, PyReadonlyArray2};
-use parry3d_f64::math::{Point, Vector};
+use parry3d_f64::math::{Vector};
 use parry3d_f64::shape::TriMesh;
 use pyo3::prelude::*;
 use rand::SeedableRng;
@@ -19,15 +18,15 @@ type OutIndices<'py> = Bound<'py, PyArray1<u64>>;
 type OutPoints<'py> = Bound<'py, PyArray2<Precision>>;
 type OutBools<'py> = Bound<'py, PyArray1<bool>>;
 
-fn vec_to_point<T: 'static + Debug + PartialEq + Copy>(v: Vec<T>) -> Point<T> {
-    Point::new(v[0], v[1], v[2])
+fn vec_to_point(v: Vec<Precision>) -> Vector {
+    Vector::new(v[0], v[1], v[2])
 }
 
-fn point_to_vec<T: 'static + Debug + PartialEq + Copy>(p: &Point<T>) -> Vec<T> {
+fn point_to_vec(p: &Vector) -> Vec<Precision> {
     vec![p.x, p.y, p.z]
 }
 
-fn vector_to_vec<T: 'static + Debug + PartialEq + Copy>(v: &Vector<T>) -> Vec<T> {
+fn vector_to_vec(v: &Vector) -> Vec<Precision> {
     vec![v[0], v[1], v[2]]
 }
 
@@ -38,7 +37,7 @@ fn vector_to_vec<T: 'static + Debug + PartialEq + Copy>(v: &Vector<T>) -> Vec<T>
 #[pyclass]
 pub struct TriMeshWrapper {
     mesh: TriMesh,
-    ray_directions: Vec<Vector<Precision>>,
+    ray_directions: Vec<Vector>,
 }
 
 #[pymethods]
@@ -54,7 +53,7 @@ impl TriMeshWrapper {
             .as_array()
             .rows()
             .into_iter()
-            .map(|v| Point::new(v[0], v[1], v[2]))
+            .map(|v| Vector::new(v[0], v[1], v[2]))
             .collect();
         let indices2 = indices
             .as_array()
@@ -99,12 +98,12 @@ impl TriMeshWrapper {
         if parallel {
             Zip::from(points.as_array().rows())
                 .par_map_collect(|v| {
-                    dist_from_mesh(&self.mesh, &Point::new(v[0], v[1], v[2]), rays)
+                    dist_from_mesh(&self.mesh, &Vector::new(v[0], v[1], v[2]), rays)
                 })
                 .into_pyarray(py)
         } else {
             Zip::from(points.as_array().rows())
-                .map_collect(|v| dist_from_mesh(&self.mesh, &Point::new(v[0], v[1], v[2]), rays))
+                .map_collect(|v| dist_from_mesh(&self.mesh, &Vector::new(v[0], v[1], v[2]), rays))
                 .into_pyarray(py)
         }
     }
@@ -120,7 +119,7 @@ impl TriMeshWrapper {
                 .par_map_collect(|r| {
                     mesh_contains_point(
                         &self.mesh,
-                        &Point::new(r[0], r[1], r[2]),
+                        &Vector::new(r[0], r[1], r[2]),
                         &self.ray_directions,
                     )
                 })
@@ -130,7 +129,7 @@ impl TriMeshWrapper {
                 .map_collect(|r| {
                     mesh_contains_point(
                         &self.mesh,
-                        &Point::new(r[0], r[1], r[2]),
+                        &Vector::new(r[0], r[1], r[2]),
                         &self.ray_directions,
                     )
                 })
@@ -151,7 +150,7 @@ impl TriMeshWrapper {
             zip.par_map_collect(|r| {
                 count_internal_rays(
                     &self.mesh,
-                    &Point::new(r[0], r[1], r[2]),
+                    &Vector::new(r[0], r[1], r[2]),
                     &self.ray_directions,
                 ) as u32
             })
@@ -159,7 +158,7 @@ impl TriMeshWrapper {
             zip.map_collect(|r| {
                 count_internal_rays(
                     &self.mesh,
-                    &Point::new(r[0], r[1], r[2]),
+                    &Vector::new(r[0], r[1], r[2]),
                     &self.ray_directions,
                 ) as u32
             })
@@ -211,14 +210,16 @@ impl TriMeshWrapper {
             .filter_map(|((src, tgt), i)| {
                 points_cross_mesh(
                     &self.mesh,
-                    &Point::new(src[0], src[1], src[2]),
-                    &Point::new(tgt[0], tgt[1], tgt[2]),
+                    &Vector::new(src[0], src[1], src[2]),
+                    &Vector::new(tgt[0], tgt[1], tgt[2]),
                 )
                 .map(|o| (i, o.0, o.1))
             })
         {
             idxs.push(idx);
-            intersections.extend(point.iter().cloned());
+            intersections.push(point.x);
+            intersections.push(point.y);
+            intersections.push(point.z);
             is_backface.push(is_bf);
             count += 1;
         }
