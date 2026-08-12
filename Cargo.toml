@@ -23,7 +23,6 @@ ndarray = { version = "0.16.1", features = ["rayon"] }
 
 [dev-dependencies]
 stl_io = "0.10.0"
-cargo-release = "0.25.22"
 
 [lib]
 name = "ncollpyde"
