@@ -2,7 +2,6 @@ from pathlib import Path
 
 import meshio
 import pytest
-
 from ncollpyde import Volume
 
 test_dir = Path(__file__).resolve().parent

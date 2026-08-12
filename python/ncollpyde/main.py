@@ -2,7 +2,7 @@ import logging
 import random
 import warnings
 from multiprocessing import cpu_count
-from typing import TYPE_CHECKING, Optional, Tuple, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
@@ -14,9 +14,9 @@ except ImportError:
 
 from ._ncollpyde import (
     TriMeshWrapper,
+    _configure_threadpool,
     _index,
     _precision,
-    _configure_threadpool,
 )
 
 if TYPE_CHECKING:
@@ -34,7 +34,7 @@ PRECISION = np.dtype(_precision())
 INDEX = np.dtype(_index())
 
 
-def configure_threadpool(n_threads: Optional[int], name_prefix: Optional[str]):
+def configure_threadpool(n_threads: int | None, name_prefix: str | None):
     """Configure the thread pool used for parallelisation.
 
     Must be called a maximum of once,
@@ -60,7 +60,7 @@ def configure_threadpool(n_threads: Optional[int], name_prefix: Optional[str]):
     _configure_threadpool(n_threads, name_prefix)
 
 
-def interpret_threads(threads: Optional[Union[int, bool]], default=DEFAULT_THREADS):
+def interpret_threads(threads: int | bool | None, default=DEFAULT_THREADS):
     if isinstance(threads, bool):
         return threads
 
@@ -91,7 +91,7 @@ class Volume:
         vertices: ArrayLike,
         triangles: ArrayLike,
         validate=False,
-        threads: Optional[bool] = None,
+        threads: bool | None = None,
         n_rays=DEFAULT_RAYS,
         ray_seed=DEFAULT_SEED,
     ):
@@ -135,7 +135,7 @@ class Volume:
 
     def _validate(
         self, vertices: np.ndarray, triangles: np.ndarray
-    ) -> Tuple[NDArray[np.float64], NDArray[np.uint32]]:
+    ) -> tuple[NDArray[np.float64], NDArray[np.uint32]]:
         if trimesh:
             tm = trimesh.Trimesh(vertices, triangles, validate=True)
             if not tm.is_volume:
@@ -169,14 +169,14 @@ class Volume:
         """Check whether a single point is in the volume."""
         return self.contains(np.asarray([item]), False)[0]
 
-    def _interpret_threads(self, threads: Optional[Union[int, bool]]) -> bool:
+    def _interpret_threads(self, threads: int | bool | None) -> bool:
         return interpret_threads(threads, self.threads)
 
     def distance(
         self,
         coords: ArrayLike,
         signed: bool = True,
-        threads: Optional[bool] = None,
+        threads: bool | None = None,
     ) -> np.ndarray:
         """Check the distance from the volume to multiple points (as a Px3 array-like).
 
@@ -202,7 +202,7 @@ class Volume:
         return self._impl.distance(coords, signed, self._interpret_threads(threads))
 
     def contains(
-        self, coords: ArrayLike, threads: Optional[bool] = None
+        self, coords: ArrayLike, threads: bool | None = None
     ) -> NDArray[np.bool_]:
         """Check whether multiple points (as a Px3 array-like) are in the volume.
 
@@ -219,7 +219,7 @@ class Volume:
         return self._impl.contains(coords, self._interpret_threads(threads))
 
     def contains_consensus(
-        self, coords: ArrayLike, threads: Optional[bool] = None
+        self, coords: ArrayLike, threads: bool | None = None
     ) -> NDArray[np.uint32]:
         """Count the number of rays cast which report hitting a backface.
 
@@ -241,8 +241,8 @@ class Volume:
         self,
         src_points: ArrayLike,
         tgt_points: ArrayLike,
-        threads: Optional[bool] = None,
-    ) -> Tuple[NDArray[np.uint64], NDArray[np.float64], NDArray[np.bool_]]:
+        threads: bool | None = None,
+    ) -> tuple[NDArray[np.uint64], NDArray[np.float64], NDArray[np.bool_]]:
         """Get intersections between line segments and volume.
 
         Line segments are defined by their start (source) and end (target) points.

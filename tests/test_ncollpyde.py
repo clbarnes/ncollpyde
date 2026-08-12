@@ -1,12 +1,9 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 """Tests for `ncollpyde` package."""
 
-from itertools import product
-import sys
-import subprocess as sp
 import logging
+import subprocess as sp
+import sys
+from itertools import product
 
 import numpy as np
 import pytest
@@ -261,7 +258,7 @@ def test_near_miss(simple_volume: Volume, steps, angle):
             PRECISION,
         )
     else:
-        raise ValueError("Unknown angle '{}', wanted 'edge' or 'face'".format(angle))
+        raise ValueError(f"Unknown angle '{angle}', wanted 'edge' or 'face'")
 
     expected_hit = steps >= 0
     fill = np.inf if expected_hit else -np.inf
@@ -304,7 +301,7 @@ def test_configure_threadpool_subprocess():
     )
     args = [sys.executable, "-c", cmd]
 
-    result = sp.run(args, text=True, capture_output=True)
+    result = sp.run(args, text=True, capture_output=True, check=False)
     logger.info(result.stdout)
     logger.warning(result.stderr)
     result.check_returncode()
