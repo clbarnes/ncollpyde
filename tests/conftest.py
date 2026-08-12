@@ -2,7 +2,6 @@ from pathlib import Path
 
 import meshio
 import pytest
-
 from ncollpyde import Volume
 
 test_dir = Path(__file__).resolve().parent
@@ -17,7 +16,7 @@ def mesh():
 
 @pytest.fixture
 def volume(mesh):
-    return Volume.from_meshio(meshio, validate=True)
+    return Volume.from_meshio(mesh, validate=True)
 
 
 @pytest.fixture

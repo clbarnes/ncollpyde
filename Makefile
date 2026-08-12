@@ -54,14 +54,14 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr .pytest_cache
 
 fmt:
-	ruff check --fix-only $(PY_PATHS) \
-	&& black $(PY_PATHS)
+	uv run ruff check --fix-only $(PY_PATHS) && \
+	uv run ruff format $(PY_PATHS)
 	cargo fmt
 
 lint-python:
-	black --check $(PY_PATHS)
-	ruff check $(PY_PATHS)
-	mypy $(PY_PATHS)
+	uv run ruff check $(PY_PATHS)
+	uv run ruff format --check $(PY_PATHS)
+	uv run mypy $(PY_PATHS)
 
 lint-rust:
 	cargo fmt -- --check
@@ -73,18 +73,22 @@ test-rust:
 	cargo test
 
 test-python: install-dev
-	pytest -v --benchmark-skip
+	uv run --all-extras pytest -v --benchmark-skip
 
 test: test-rust test-python
 
 bench: install-opt
-	pytest -v --benchmark-only
+	uv run --all-extras pytest -v --benchmark-only
 
-install-dev:
-	maturin develop
+sync:
+	uv sync --all-extras --all-groups
 
-install-opt:
-	maturin develop --release
+install-dev: sync
+	uv run python -m maturin_import_hook site install
+	uv run maturin develop --uv --group dev --extras validate
+
+install-opt: sync
+	uv run maturin develop --release --uv --extras validate
 
 coverage: install-dev
 	coverage run --source python/ncollpyde -m pytest && \
@@ -92,7 +96,7 @@ coverage: install-dev
 	coverage html && \
 	$(BROWSER) htmlcov/index.html
 
-docs: ## generate Sphinx HTML documentation, including API docs
+docs: install-dev ## generate Sphinx HTML documentation, including API docs
 	# rm -f docs/ncollpyde.rst && \
 	# rm -f docs/modules.rst && \
 	# sphinx-apidoc -o docs/ ncollpyde && \

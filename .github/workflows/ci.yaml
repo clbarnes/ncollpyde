@@ -5,42 +5,38 @@ defaults:
     shell: bash
 
 jobs:
-
   lint-rust:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
           components: rustfmt, clippy
-      - uses: Swatinem/rust-cache@v1
-      - uses: actions/cache@v2
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+      - uses: Swatinem/rust-cache@v2
       - run: make lint-rust
 
   lint-python:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: '3.x'
-      - run: pip install $(grep -E '^(black|ruff|mypy|numpy)' requirements.txt)
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v9.0.0
+      - run: make sync
       - run: make lint-python
 
   test-rust:
-    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        rust-version: [stable, beta, nightly]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: stable
-      - uses: Swatinem/rust-cache@v1
+          toolchain: ${{ matrix.rust-version }}
+      - uses: astral-sh/setup-uv@v9.0.0
+      - uses: Swatinem/rust-cache@v2
       - run: cargo test
 
   test-python:
@@ -48,57 +44,42 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          - '3.8'
-          - '3.9'
-          - '3.10'
-          - '3.11'
-    runs-on: ubuntu-20.04
+          - "3.12"
+          - "3.13"
+          - "3.14"
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - uses: Swatinem/rust-cache@v1
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: astral-sh/setup-uv@v9.0.0
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: actions/cache@v2
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-      - run: |
-          sudo apt-get install libspatialindex-dev
-          pip install -U pip wheel
-          pip install -r requirements.txt
-        name: Install dependencies
+      - run: sudo apt-get install libspatialindex-dev
+        name: Install OS dependencies
       - run: |
           mkdir -p $TGT_DIR
           rm -f $TGT_DIR/*.whl
-          maturin build --release --interpreter python --out $TGT_DIR
-          pip install $TGT_DIR/*.whl
+          make sync
+          uv run maturin build --release --interpreter python --out $TGT_DIR
+          uv pip install $TGT_DIR/*.whl
         name: Install package
         env:
           TGT_DIR: "target/wheels/${{ matrix.python-version }}"
-      - run: pytest --verbose
+      - run: uv run pytest --verbose
 
   deploy:
     strategy:
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-20.04]
+        os: [macos-latest, windows-latest, ubuntu-24.04]
     needs: [lint-rust, lint-python, test-rust, test-python]
     runs-on: ${{ matrix.os }}
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/v')
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - uses: actions/setup-python@v2
-        with:
-          python-version: '3.9'
-      - uses: messense/maturin-action@v1
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: astral-sh/setup-uv@v9.0.0
+      - uses: PyO3/maturin-action@v1
         with:
           manylinux: auto
           command: publish

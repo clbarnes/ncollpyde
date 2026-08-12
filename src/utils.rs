@@ -7,9 +7,9 @@ pub type Precision = f64;
 
 pub fn random_dir<R: Rng>(rng: &mut R, length: Precision) -> Vector<Precision> {
     let unscaled: Vector<Precision> = [
-        rng.gen::<Precision>() - 0.5,
-        rng.gen::<Precision>() - 0.5,
-        rng.gen::<Precision>() - 0.5,
+        rng.random::<Precision>() - 0.5,
+        rng.random::<Precision>() - 0.5,
+        rng.random::<Precision>() - 0.5,
     ]
     .into();
     unscaled.normalize() * length
@@ -56,6 +56,18 @@ pub fn mesh_contains_point(
     }
 }
 
+/// Count the number of rays which report hitting a backface.
+pub fn count_internal_rays(
+    mesh: &TriMesh,
+    point: &Point<f64>,
+    ray_directions: &[Vector<f64>],
+) -> usize {
+    ray_directions
+        .iter()
+        .filter(|r| mesh_contains_point_ray(mesh, point, r))
+        .count()
+}
+
 pub fn points_cross_mesh(
     mesh: &TriMesh,
     src_point: &Point<f64>,
@@ -65,7 +77,7 @@ pub fn points_cross_mesh(
     mesh.cast_local_ray_and_get_normal(
         &ray, 1.0, false, // unused
     )
-    .map(|i| (ray.point_at(i.toi), mesh.is_backface(i.feature)))
+    .map(|i| (ray.point_at(i.time_of_impact), mesh.is_backface(i.feature)))
 }
 
 pub fn dist_from_mesh(mesh: &TriMesh, point: &Point<f64>, rays: Option<&[Vector<f64>]>) -> f64 {
@@ -120,6 +132,7 @@ mod tests {
                 })
                 .collect(),
         )
+        .expect("mesh should be valid")
     }
 
     fn cube() -> TriMesh {
@@ -141,6 +154,8 @@ mod tests {
         assert!(cube().contains_point(&Isometry::identity(), &Point::new(0.5, 0.5, 0.0)))
     }
 
+    /// Assert that a ray from point `p` in the direction `v`
+    /// either is or is not inside the unit cube.
     fn assert_ray(p: [Precision; 3], v: [Precision; 3], is_inside: bool) {
         let mesh = cube();
         let actual = mesh_contains_point_ray(
@@ -203,13 +218,11 @@ mod tests {
         assert_ray([-0.5, -0.5, -0.5], [10.0, 10.0, 10.0], false);
     }
 
-    #[ignore]
     #[test]
     fn outside_touch_edge() {
         assert_ray([-0.5, 0.5, 0.5], [1.0, 1.0, 0.0], false);
     }
 
-    #[ignore]
     #[test]
     fn outside_touch_corner() {
         assert_ray([-0.5, 0.5, 0.5], [1.0, 1.0, 1.0], false);

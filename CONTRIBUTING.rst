@@ -63,12 +63,10 @@ Ready to contribute? Here's how to set up `ncollpyde` for local development.
 
     $ git clone git@github.com:your_name_here/ncollpyde.git
 
-3. Create a virtualenv, install the dependencies, and build the project. You will also need a `rust toolchain <https://www.rust-lang.org/tools/install>`_::
+3. Create a virtualenv, install the dependencies, and build the project. You will also need a `rust toolchain <https://www.rust-lang.org/tools/install>`_ and `uv <https://docs.astral.sh/uv/getting-started/installation/>`_::
 
     $ cd ncollpyde/
-    $ python -m venv --prompt ncollpyde env
-    $ pip install -r requirements.txt -r docs/requirements.txt
-    $ maturin develop
+    $ make install-dev
 
 4. Create a branch for local development::
 
@@ -106,7 +104,7 @@ Tips
 
 To run a subset of tests::
 
-    $ pytest tests.test_ncollpyde
+    $ uv run pytest tests.test_ncollpyde
 
 Deploying
 ---------

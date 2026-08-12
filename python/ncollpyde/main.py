@@ -2,21 +2,16 @@ import logging
 import random
 import warnings
 from multiprocessing import cpu_count
-from typing import TYPE_CHECKING, Optional, Tuple, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-try:
-    import trimesh
-except ImportError:
-    trimesh = None
-
 from ._ncollpyde import (
     TriMeshWrapper,
+    _configure_threadpool,
     _index,
     _precision,
-    _configure_threadpool,
 )
 
 if TYPE_CHECKING:
@@ -34,7 +29,7 @@ PRECISION = np.dtype(_precision())
 INDEX = np.dtype(_index())
 
 
-def configure_threadpool(n_threads: Optional[int], name_prefix: Optional[str]):
+def configure_threadpool(n_threads: int | None, name_prefix: str | None):
     """Configure the thread pool used for parallelisation.
 
     Must be called a maximum of once,
@@ -60,7 +55,7 @@ def configure_threadpool(n_threads: Optional[int], name_prefix: Optional[str]):
     _configure_threadpool(n_threads, name_prefix)
 
 
-def interpret_threads(threads: Optional[Union[int, bool]], default=DEFAULT_THREADS):
+def interpret_threads(threads: int | bool | None, default=DEFAULT_THREADS):
     if isinstance(threads, bool):
         return threads
 
@@ -91,11 +86,11 @@ class Volume:
         vertices: ArrayLike,
         triangles: ArrayLike,
         validate=False,
-        threads: Optional[bool] = None,
+        threads: bool | None = None,
         n_rays=DEFAULT_RAYS,
         ray_seed=DEFAULT_SEED,
     ):
-        f"""
+        """
         Create a volume described by a triangular mesh with N vertices and M triangles.
 
         :param vertices: Nx3 array-like of floats, coordinates of triangle corners
@@ -106,7 +101,7 @@ class Volume:
             winding, and repairs made if possible.
             Otherwise, only very basic checks are made.
         :param threads: optional bool, whether to parallelise queries.
-        :param n_rays: int (default {DEFAULT_RAYS}), rays used to check containment.
+        :param n_rays: int (default 3), rays used to check containment.
             The underlying library sometimes reports false positives:
             casting multiple rays drastically reduces the chances of this.
             As the bug only affects ray casts and only produces false positives,
@@ -114,7 +109,7 @@ class Volume:
                 - the point is not in the bounding box
                 - the point is on the hull
                 - one ray reports that the point is external.
-        :param ray_seed: int >=0 (default {DEFAULT_SEED}), used for generating rays.
+        :param ray_seed: int >=0 (default 1991), used for generating rays.
             If None, use a random seed.
         """
         vert = np.asarray(vertices, self.dtype)
@@ -135,8 +130,10 @@ class Volume:
 
     def _validate(
         self, vertices: np.ndarray, triangles: np.ndarray
-    ) -> Tuple[NDArray[np.float64], NDArray[np.uint32]]:
-        if trimesh:
+    ) -> tuple[NDArray[np.float64], NDArray[np.uint32]]:
+        try:
+            import trimesh
+
             tm = trimesh.Trimesh(vertices, triangles, validate=True)
             if not tm.is_volume:
                 logger.info("Mesh not valid, attempting to fix")
@@ -150,8 +147,7 @@ class Volume:
                     )
 
             return tm.vertices.astype(self.dtype), tm.faces.astype(np.uint32)
-
-        else:
+        except ImportError:
             warnings.warn("trimesh not installed; full validation not possible")
 
             if vertices.shape[1:] != (3,):
@@ -169,14 +165,14 @@ class Volume:
         """Check whether a single point is in the volume."""
         return self.contains(np.asarray([item]), False)[0]
 
-    def _interpret_threads(self, threads: Optional[Union[int, bool]]) -> bool:
+    def _interpret_threads(self, threads: int | bool | None) -> bool:
         return interpret_threads(threads, self.threads)
 
     def distance(
         self,
         coords: ArrayLike,
         signed: bool = True,
-        threads: Optional[bool] = None,
+        threads: bool | None = None,
     ) -> np.ndarray:
         """Check the distance from the volume to multiple points (as a Px3 array-like).
 
@@ -202,7 +198,7 @@ class Volume:
         return self._impl.distance(coords, signed, self._interpret_threads(threads))
 
     def contains(
-        self, coords: ArrayLike, threads: Optional[bool] = None
+        self, coords: ArrayLike, threads: bool | None = None
     ) -> NDArray[np.bool_]:
         """Check whether multiple points (as a Px3 array-like) are in the volume.
 
@@ -218,12 +214,31 @@ class Volume:
 
         return self._impl.contains(coords, self._interpret_threads(threads))
 
+    def contains_consensus(
+        self, coords: ArrayLike, threads: bool | None = None
+    ) -> NDArray[np.uint32]:
+        """Count the number of rays cast which report hitting a backface.
+
+        This is mainly for debugging.
+
+        :param coords:
+        :param threads: None,
+            Whether to parallelise the queries. If ``None`` (default),
+            refer to the instance's ``threads`` attribute.
+        :return: np.ndarray of u32 counts
+        """
+        coords = np.asarray(coords, self.dtype)
+        if coords.shape[1:] != (3,):
+            raise ValueError("Coords is not a Nx3 array-like")
+
+        return self._impl.contains_consensus(coords, self._interpret_threads(threads))
+
     def intersections(
         self,
         src_points: ArrayLike,
         tgt_points: ArrayLike,
-        threads: Optional[bool] = None,
-    ) -> Tuple[NDArray[np.uint64], NDArray[np.float64], NDArray[np.bool_]]:
+        threads: bool | None = None,
+    ) -> tuple[NDArray[np.uint64], NDArray[np.float64], NDArray[np.bool_]]:
         """Get intersections between line segments and volume.
 
         Line segments are defined by their start (source) and end (target) points.
