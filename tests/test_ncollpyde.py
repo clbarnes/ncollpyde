@@ -7,13 +7,9 @@ from itertools import product
 
 import numpy as np
 import pytest
-
-try:
-    import trimesh
-except ImportError:
-    trimesh = None
-
 from ncollpyde import PRECISION, Volume, configure_threadpool
+
+trimesh = pytest.importorskip("trimesh")
 
 logger = logging.getLogger(__name__)
 
@@ -60,28 +56,24 @@ def test_no_validation(mesh):
     Volume(mesh.points, triangles, True)
 
 
-@pytest.mark.skipif(not trimesh, reason="Requires trimesh")
 def test_can_repair_hole(mesh):
     triangles = mesh.cells_dict["triangle"]
     triangles = triangles[:-1]
     Volume(mesh.points, triangles, True)
 
 
-@pytest.mark.skipif(not trimesh, reason="Requires trimesh")
 def test_can_repair_inversion(mesh):
     triangles = mesh.cells_dict["triangle"]
     triangles[-1] = triangles[-1, ::-1]
     Volume(mesh.points, triangles, True)
 
 
-@pytest.mark.skipif(not trimesh, reason="Requires trimesh")
 def test_can_repair_inversions(mesh):
     triangles = mesh.cells_dict["triangle"]
     triangles = triangles[:, ::-1]
     Volume(mesh.points, triangles, True)
 
 
-@pytest.mark.skipif(not trimesh, reason="Requires trimesh")
 def test_inversions_repaired(simple_mesh):
     center = [0.5, 0.5, 0.5]
 
@@ -104,7 +96,6 @@ def test_points(mesh):
     assert actual == expected
 
 
-@pytest.mark.skipif(not trimesh, reason="Requires trimesh")
 def test_triangles(mesh):
     points = mesh.points
     triangles = mesh.cells_dict["triangle"]
